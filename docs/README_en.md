@@ -101,6 +101,20 @@ This application is optimized for **Google AI Studio** and Gemini 2.5 Flash. You
 
 ## 📦 Quick Start
 
+### Prerequisites
+- **Node.js** 18.0 or higher ([Official Site (nodejs.org)](https://nodejs.org/) - LTS recommended)
+
+---
+
+### 🖱️ General Users: One-Click Execution (Recommended)
+After downloading the repository (extract ZIP), double-click the script for your operating system to **automatically install dependencies and launch the 3D book in your browser**:
+
+* **Windows**: Double-click **`start.bat`**.
+* **macOS / Linux**: Run `bash start.sh` in terminal or double-click `start.sh`.
+
+---
+
+### 💻 Developers: Manual Terminal Commands
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/pentalyze.git

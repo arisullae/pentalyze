@@ -117,10 +117,19 @@ Pentalyze는 코드베이스 전반(`src/i18n/translations.ts`, `src/types.ts`)�
 ## 📦 시작하기 (Quick Start)
 
 ### 사전 요구사항
-- Node.js 18.0 이상
-- npm 또는 pnpm, yarn
+- **Node.js** 18.0 이상 ([공식 홈페이지(nodejs.org)](https://nodejs.org/)에서 LTS 버전 설치)
 
-### 설치 및 로컬 실행
+---
+
+### 🖱️ 일반 사용자: 더블 클릭 한 번으로 실행하기 (추천)
+저장소를 다운로드(ZIP 압축 해제)한 후, 본인의 운영체제에 맞는 파일을 더블 클릭하기만 하면 **의존성 설치부터 브라우저 실행까지 자동으로 완료**됩니다.
+
+* **Windows 사용자**: 폴더 안의 **`start.bat`** 파일을 마우스로 더블 클릭합니다.
+* **Mac / Linux 사용자**: 터미널에서 `bash start.sh`를 입력하거나 `chmod +x start.sh && ./start.sh`를 실행합니다.
+
+---
+
+### 💻 개발자: 터미널 명령어로 직접 실행하기
 ```bash
 # 저장소 클론
 git clone https://github.com/your-username/pentalyze.git
@@ -164,6 +173,8 @@ pentalyze/
 │   ├── App.tsx                   # 메인 애플리케이션
 │   └── main.tsx                  # 리액트 엔트리 포인트
 ├── package.json
+├── start.bat                     # Windows 원클릭 자동 실행 배치 파일
+├── start.sh                      # Mac/Linux 원클릭 자동 실행 스크립트
 └── README.md
 ```
 

@@ -94,6 +94,20 @@ Pentalyze est optimisé pour les modèles Gemini de **Google AI Studio**. Vous p
 
 ## 📦 Démarrage Rapide (Quick Start)
 
+### Prérequis
+- **Node.js** 18.0 ou supérieur (installez la version LTS depuis le [site officiel (nodejs.org)](https://nodejs.org/))
+
+---
+
+### 🖱️ Utilisateurs : Lancement en un clic (Recommandé)
+Après avoir téléchargé le dépôt (décompressez le fichier ZIP), double-cliquez simplement sur le script adapté à votre système d'exploitation pour **installer automatiquement les dépendances et ouvrir le livre 3D dans votre navigateur** :
+
+* **Utilisateurs Windows** : Double-cliquez sur le fichier **`start.bat`**.
+* **Utilisateurs macOS / Linux** : Exécutez `bash start.sh` dans votre terminal ou double-cliquez sur `start.sh`.
+
+---
+
+### 💻 Développeurs : Lancement manuel via le terminal
 ```bash
 # Cloner le dépôt
 git clone https://github.com/your-username/pentalyze.git
