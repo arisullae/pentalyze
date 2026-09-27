@@ -154,6 +154,102 @@ Pentalyze वेब मानक **PWA (Progressive Web App)** का पूर�
 
 ---
 
+### 4. ☁️ Google Colab क्लाउड सैंडबॉक्स निष्पादन और निष्कासन (Zero-Install)
+
+> **विस्तृत वन-क्लिक स्क्रिप्ट और संचालन गाइड**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+लोकल पीसी पर Node.js या किसी भी डेवलपमेंट टूल को इंस्टॉल किए बिना, केवल वेब ब्राउज़र से क्लाउड वर्चुअल मशीन (Ubuntu) में Pentalyze का सुरक्षित परीक्षण, संचालन और पूर्ण निष्कासन किया जा सकता है।
+
+* **💡 `your-username` मार्गदर्शन**:  
+  `https://github.com/your-username/pentalyze.git` में `your-username` को अपने **GitHub यूज़रनेम** (उदा: `developer-id`) से बदलें, या अपने फोर्क किए गए रिपॉजिटरी पेज के ऊपर हरे बटन **[<> Code]** ➔ **[HTTPS]** से कॉपी किए गए URL को पेस्ट करें।
+
+* **एक-क्लिक स्थापना और निष्पादन (Colab सेल में पेस्ट करें)**:
+  ```python
+  # 1. Node.js 20.x परिवेश और Cloudflare टनल टूल स्थापित करें
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. रिपॉजिटरी क्लोन करें ('your-username' को अपनी GitHub ID से बदलें)
+  # (उदा: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. बैकग्राउंड सर्वर शुरू करें और सार्वजनिक यूआरएल प्राप्त करें
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # सर्वर बूट प्रतीक्षा
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(आउटपुट में उत्पन्न `https://*.trycloudflare.com` URL पर क्लिक करके विश्व में कहीं से भी तुरंत ब्राउज़र में उपयोग करें)*
+* **पूर्ण निष्कासन (Teardown & Purge)**:
+  ```bash
+  # 1. प्रक्रिया रोकें: !pkill -f node && !pkill -f cloudflared
+  # 2. फाइलें स्थायी हटाएं: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. रनटाइम रीसेट: Colab मेनू में [Runtime] ➔ [Disconnect and delete runtime] चुनें
+  ```
+
+---
+
+## 📂 प्रोजेक्ट संरचना (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # बहुभाषी गाइड और तकनीकी हैंडओवर दस्तावेज
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [अनिवार्य] 3D/XR ड्रैग इंटरैक्शन विश्लेषण और रोडमैप
+│   ├── GOOGLE_COLAB_GUIDE.md     # [नया] Google Colab क्लाउड सैंडबॉक्स परीक्षण, संचालन और निष्कासन
+│   └── README_*.md               # 9 भाषाओं में वैश्विक उपयोगकर्ता गाइड
+├── public/                       # PWA मेनिफेस्ट और स्थिर संपत्तियां
+├── src/
+│   ├── components/
+│   │   ├── presets/              # प्रत्येक भाषा के लिए नमूना वाक्य मॉड्यूल
+│   │   ├── Book3D.tsx            # 3D इंटरैक्टिव पुस्तक फ्लिप और तुलनात्मक दृश्य
+│   │   ├── Header.tsx            # रिस्पॉन्सिव हेडर, PWA इंस्टॉल और भाषा चयन
+│   │   ├── SentenceInput.tsx     # वाक्य इनपुट और 5-आयामी विश्लेषण पाइपलाइन
+│   │   ├── BookshelfModal.tsx    # व्यक्तिगत सहेजी गई लाइब्रेरी
+│   │   ├── ExportModal.tsx       # Markdown / PDF निर्यात
+│   │   └── SettingsModal.tsx     # BYOK एपीआई कुंजी सेटिंग मोडल
+│   ├── services/
+│   │   ├── ai.ts                 # Gemini / OpenAI बहु-एलएलएम पाइपलाइन
+│   │   ├── tts.ts                # WebSpeech और ElevenLabs हाइब्रिड टीटीएस इंजन
+│   │   └── storage.ts            # LocalStorage डेटा प्रबंधन
+│   ├── i18n/
+│   │   ├── locales/              # 10 भाषाओं के शब्दकोश (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # 10 भाषाओं का पंजीकरण और मैपिंग
+│   │   └── types.ts              # शब्दकोश प्रकार परिभाषाएं
+│   ├── App.tsx                   # मुख्य अनुप्रयोग रूट
+│   └── main.tsx                  # PWA सर्विस वर्कर पंजीकरण के साथ React प्रवेश बिंदु
+├── package.json
+├── start.bat                     # Windows एक-क्लिक स्वचालित रन बैच फ़ाइल
+├── start.sh                      # Mac/Linux एक-क्लिक स्वचालित रन शैल स्क्रिप्ट
+└── README.md
+```
+
+---
+
+## 🛠️ डेवलपर्स और ऑपरेटरों के लिए तकनीकी हैंडओवर (Technical Handover)
+
+> **विस्तृत तकनीकी विश्लेषण और कार्रवाई गाइड**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **क्लाउड टेस्टबेड संचालन गाइड**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+भविष्य में इस प्रोजेक्ट को फोर्क करके **आगे के विकास, इंटरैक्शन सुधार, उत्पादन परिनियोजन और संचालन** का प्रबंधन करने वाले इंजीनियरों के लिए, **'3D यथार्थवादी'** और **'XR स्थानिक'** मोड में झुकाव (जाइरो/पैरालैक्स) अक्षम होने पर ऊपर/नीचे ड्रैग बटनों के सूक्ष्म व्यवहार और उपचारात्मक रोडमैप, साथ ही Google Colab आधारित परीक्षण परिवेश का विस्तृत विवरण दिया गया है।
+
+### 📌 प्रमुख मुद्दों का सारांश और रोडमैप
+1. **व्यवहार विश्लेषण**:
+   * **झुकाव सक्षम (Tilt ON)**: जाइरो/माउस गति के कारण ब्राउज़र का कंपोजिटर थ्रेड हर फ्रेम में हिट-टेस्टिंग का पुनर्मूल्यांकन करता है, जिससे ड्रैग प्रतिक्रिया तात्कालिक होती है।
+   * **झुकाव अक्षम (Tilt OFF)**: स्थिर 3D कोण (`rotateX: 14~18deg`) पर तय होने पर, सबपिक्सेल रैस्टराइज़ेशन कैशिंग और 2D स्क्रीन तथा 3D प्रक्षेपण तल के बीच गैर-रैखिक कोणीय अंतर के कारण ड्रैग में सूक्ष्म प्रतिरोध महसूस हो सकता है।
+2. **अनुशंसित कार्रवाई रोडमैप**:
+   * **अल्पकालिक**: उच्च-डीपीआई (Retina/Mobile) अनुकूली ड्रैग थ्रेशोल्ड और `onLostPointerCapture` टाइमर गार्ड।
+   * **मध्यमकालिक**: `DOMMatrix.inverse()` आधारित स्क्रीन-टू-लोकल स्पेस निर्देशांक व्युत्क्रम प्रक्षेपण गणना।
+   * **दीर्घकालिक (अगली पीढ़ी)**: Three.js / WebGL / WebXR मूल Raycaster आधारित पूर्ण 3D वर्चुअल कैनवास में माइग्रेशन।
+3. **क्लाउड सैंडबॉक्स टेस्टबेड (Cloud Sandbox Testbed)**:
+   * स्थानीय पर्यावरण सेटअप के बिना Google Colab टनलिंग के माध्यम से वास्तविक मोबाइल उपकरणों (iOS Safari, Android Chrome) पर रिमोट परीक्षण। विवरण के लिए [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md) देखें।
+
+वास्तुकला आरेख, गणितीय समन्वय सूत्र और ब्राउज़र क्यूए मैट्रिक्स के लिए कृपया [तकनीकी हैंडओवर दस्तावेज़](./DEVELOPER_HANDOVER_3D_XR_DRAG.md) देखें।
+
+---
+
 ## 📄 लाइसेंस (License)
 
 यह प्रोजेक्ट **MIT लाइसेंस** के अंतर्गत उपलब्ध है। व्यावसायिक उपयोग, संशोधन और पुनर्वितरण पूर्णतः स्वतंत्र हैं।

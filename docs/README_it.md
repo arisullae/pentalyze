@@ -154,6 +154,102 @@ Pentalyze supporta pienamente lo standard **PWA (Progressive Web App)**. È poss
 
 ---
 
+### 4. ☁️ Esecuzione e Rimozione su Google Colab Cloud Sandbox (Zero-Install)
+
+> **Script dettagliati con 1 clic & guida operativa**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Puoi testare, eseguire e rimuovere Pentalyze in una macchina virtuale cloud (Ubuntu) senza alcuna installazione locale di Node.js o strumenti di sviluppo, direttamente tramite il tuo browser web.
+
+* **💡 Guida a `your-username`**:  
+  In `https://github.com/your-username/pentalyze.git`, sostituisci `your-username` con **il tuo nome utente GitHub** (es: `developer-id`), oppure incolla l'URL HTTPS del tuo repository forked copiato dal pulsante verde **[<> Code]** ➔ **[HTTPS]**.
+
+* **Installazione ed esecuzione con un clic (Incolla nella cella di Colab)**:
+  ```python
+  # 1. Configura ambiente Node.js 20.x e installa strumento tunnel Cloudflare
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. Clona repository (sostituisci 'your-username' con il tuo ID GitHub)
+  # (es: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. Avvia server in background e ottieni URL pubblico
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # Attesa avvio server
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(Fai clic sull'URL `https://*.trycloudflare.com` generato nell'output per accedere istantaneamente a Pentalyze da qualsiasi dispositivo nel mondo)*
+* **Rimozione Completa (Teardown & Purge)**:
+  ```bash
+  # 1. Ferma processi: !pkill -f node && !pkill -f cloudflared
+  # 2. Elimina file permanentemente: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. Reimposta runtime: Nel menu Colab [Runtime] ➔ [Disconnetti ed elimina runtime]
+  ```
+
+---
+
+## 📂 Struttura del Progetto (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # Guide multilingue e documenti di passaggio tecnico
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [Fondamentale] Analisi interazione di trascinamento 3D/XR e roadmap
+│   ├── GOOGLE_COLAB_GUIDE.md     # [Nuovo] Guida a test, esecuzione e rimozione su Google Colab
+│   └── README_*.md               # Guide utente globali in 9 lingue
+├── public/                       # Manifest PWA e risorse statiche
+├── src/
+│   ├── components/
+│   │   ├── presets/              # Moduli di frasi di esempio per ciascuna lingua
+│   │   ├── Book3D.tsx            # Volta pagina 3D e vista di confronto affiancata
+│   │   ├── Header.tsx            # Header responsive, installazione PWA e selettore lingua
+│   │   ├── SentenceInput.tsx     # Inserimento frasi e pipeline di analisi a 5 dimensioni
+│   │   ├── BookshelfModal.tsx    # Libreria personale di archiviazione
+│   │   ├── ExportModal.tsx       # Esportazione Markdown / PDF
+│   │   └── SettingsModal.tsx     # Modale impostazioni chiavi API (BYOK)
+│   ├── services/
+│   │   ├── ai.ts                 # Pipeline multi-LLM (Gemini / OpenAI)
+│   │   ├── tts.ts                # Motore vocale ibrido WebSpeech & ElevenLabs
+│   │   └── storage.ts            # Gestore di persistenza LocalStorage
+│   ├── i18n/
+│   │   ├── locales/              # Dizionari per 10 lingue (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # Registrazione e mappatura delle 10 lingue
+│   │   └── types.ts              # Definizioni di tipi per i dizionari
+│   ├── App.tsx                   # Applicazione principale
+│   └── main.tsx                  # Punto di ingresso React con registrazione del service worker PWA
+├── package.json
+├── start.bat                     # File batch per avvio automatico con un clic su Windows
+├── start.sh                      # Script shell per avvio automatico con un clic su Mac/Linux
+└── README.md
+```
+
+---
+
+## 🛠️ Passaggio Tecnico per Sviluppatori e Operatori (Technical Handover)
+
+> **Analisi Tecnica Dettagliata & Guida Operativa**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **Guida al Testbed Cloud**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Per gli ingegneri che eseguono il fork di questo progetto per **sviluppi futuri, miglioramenti dell'interazione, deployment in produzione e manutenzione**, sono documentate le caratteristiche di comportamento fine dei pulsanti di trascinamento superiore e inferiore quando l'inclinazione (giroscopio/parallasse) è disattivata nelle modalità **'3D Realistico'** e **'Spazio XR'**, nonché la configurazione del banco di prova su Google Colab.
+
+### 📌 Sintesi dei Problemi Chiave e Roadmap
+1. **Analisi del Comportamento**:
+   * **Inclinazione ATTIVA**: L'hit-testing continuo del thread compositor del browser guidato da giroscopio/mouse garantisce una risposta immediata al trascinamento.
+   * **Inclinazione DISATTIVA**: Con una rotazione 3D statica (`rotateX: 14~18deg`), il caching della rasterizzazione subpixel e la divergenza angolare non lineare tra schermo 2D e piano di proiezione 3D possono causare una sottile sensazione di resistenza.
+2. **Roadmap di Azione Consigliata**:
+   * **Breve termine**: Adattamento dinamico della soglia di trascinamento per schermi ad alta densità (Retina/Mobile) e guardia con timer di sicurezza `onLostPointerCapture`.
+   * **Medio termine**: Calcolo di proiezione inversa da coordinate schermo a spazio locale con `DOMMatrix.inverse()`.
+   * **Lungo termine (Prossima generazione)**: Migrazione completa a una canvas 3D virtuale nativa con motore Raycaster in Three.js / WebGL / WebXR.
+3. **Banco di Prova Cloud (Cloud Sandbox Testbed)**:
+   * Verifica remota su dispositivi mobili reali (iOS Safari, Android Chrome) senza configurazione dell'ambiente locale tramite i tunnel di Google Colab. Consulta [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md).
+
+Per diagrammi di architettura completi, formule matematiche e matrici QA cross-browser, consulta il [Documento di Passaggio Tecnico](./DEVELOPER_HANDOVER_3D_XR_DRAG.md).
+
+---
+
 ## 📄 Licenza (License)
 
 Questo progetto è rilasciato sotto licenza **MIT**. Sono liberamente consentiti l'uso commerciale, la modifica e la ridistribuzione.

@@ -183,6 +183,102 @@ Pentalyze fully adheres to **Progressive Web App (PWA)** web standards. Without 
 
 ---
 
+### 4. ☁️ Google Colab Cloud Sandbox Execution & Teardown (Zero-Install)
+
+> **Detailed One-Click Script & Operating Guide**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+You can safely test, run, and teardown Pentalyze inside a cloud virtual machine (Ubuntu) with zero local installations of Node.js or development tools—using just your web browser.
+
+* **💡 `your-username` Guidance**:  
+  In `https://github.com/your-username/pentalyze.git`, replace `your-username` with **your GitHub username** (e.g., `developer-id`), or paste your forked repository HTTPS URL copied from the green **[<> Code]** ➔ **[HTTPS]** button at the top of your GitHub repository page.
+
+* **One-Click Install & Run (Paste into Colab Cell)**:
+  ```python
+  # 1. Setup Node.js 20.x environment & install Cloudflare tunnel tool
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. Clone repository (Replace 'your-username' with your GitHub ID)
+  # (e.g., !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. Launch background dev server & obtain public tunnel URL
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # Wait for server bootstrap
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(Click the `https://*.trycloudflare.com` URL in the output to access Pentalyze instantly from any device across the globe)*
+* **Complete Teardown & Purge**:
+  ```bash
+  # 1. Stop background processes: !pkill -f node && !pkill -f cloudflared
+  # 2. Permanently delete files: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. Factory Reset: In Colab menu, click [Runtime] ➔ [Disconnect and delete runtime] for 100% clean reset
+  ```
+
+---
+
+## 📂 Project Directory Structure
+
+```
+pentalyze/
+├── docs/                         # Multilingual guides and technical handover documents
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [Core] 3D/XR Drag Interaction Analysis & Action Roadmap
+│   ├── GOOGLE_COLAB_GUIDE.md     # [Guide] Google Colab Cloud Sandbox Test, Run & Teardown
+│   └── README_*.md               # Global user guides in 9 languages
+├── public/                       # PWA manifest and static assets
+├── src/
+│   ├── components/
+│   │   ├── presets/              # Multilingual sentence preset modules
+│   │   ├── Book3D.tsx            # 3D interactive book flip & split comparison view
+│   │   ├── Header.tsx            # Responsive header, PWA install prompt & language selector
+│   │   ├── SentenceInput.tsx     # Sentence input & 5-dimension analysis pipeline
+│   │   ├── BookshelfModal.tsx    # Personal saved library storage
+│   │   ├── ExportModal.tsx       # Markdown / PDF export
+│   │   └── SettingsModal.tsx     # BYOK API settings modal
+│   ├── services/
+│   │   ├── ai.ts                 # Gemini / OpenAI multi-LLM pipeline
+│   │   ├── tts.ts                # WebSpeech & ElevenLabs hybrid TTS engine
+│   │   └── storage.ts            # LocalStorage persistence manager
+│   ├── i18n/
+│   │   ├── locales/              # Dictionaries for 10 languages (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # 10-language registry and mapping
+│   │   └── types.ts              # Dictionary type definitions
+│   ├── App.tsx                   # Main application root
+│   └── main.tsx                  # React entry point with PWA service worker registration
+├── package.json
+├── start.bat                     # Windows one-click auto-launch batch script
+├── start.sh                      # Mac/Linux one-click auto-launch shell script
+└── README.md
+```
+
+---
+
+## 🛠️ Technical Handover for Developers & Maintainers
+
+> **Detailed Technical Analysis & Action Guide**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **Cloud Testbed Execution Guide**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+For engineers who fork this project to handle **future development, interaction enhancements, production deployment, and maintenance**, comprehensive documentation is provided covering the subtle behavioral characteristics and mitigation roadmap for the top/bottom drag buttons when gyro/parallax tilt is disabled in **'3D Realistic'** and **'XR Spatial'** modes, as well as establishing a cloud sandbox testbed via Google Colab.
+
+### 📌 Summary of Core Issues & Roadmap
+1. **Behavioral Analysis**:
+   * **Tilt ON**: Continuous hit-testing by the browser's compositor thread driven by gyro/mouse delta ensures immediate drag response.
+   * **Tilt OFF**: With static 3D transformation (`rotateX: 14~18deg`), subpixel rasterization caching and non-linear angle divergence between 2D screen coordinates and the 3D projection plane may cause a subtle sensation of drag resistance.
+2. **Recommended Action Roadmap**:
+   * **Short-term**: High-DPI responsive drag threshold adaptation & `onLostPointerCapture` fail-safe timer guard.
+   * **Mid-term**: `DOMMatrix.inverse()` screen-to-local-space coordinate inverse projection calculation.
+   * **Long-term (Next Gen)**: Migration to a full Three.js / WebGL / WebXR native Raycaster virtual canvas engine.
+3. **Cloud Sandbox Testbed**:
+   * Real device verification (iOS Safari, Android Chrome) can be executed remotely without local environment setup using Google Colab tunneling. Refer to [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md).
+
+For full architectural diagrams, mathematical coordinate formulations, and browser QA matrices, please consult the [Technical Handover Document](./DEVELOPER_HANDOVER_3D_XR_DRAG.md).
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](../LICENSE). Feel free to fork and build upon it!

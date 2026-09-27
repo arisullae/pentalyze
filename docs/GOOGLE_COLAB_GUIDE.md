@@ -3,26 +3,28 @@
 
 > **가이드 대상**: 로컬 PC에 Node.js나 개발 툴 설치 없이 웹 브라우저만으로 Pentalyze를 클라우드 환경에서 즉시 구동, 테스트, 운영 및 흔적 없이 삭제하고자 하는 모든 사용자 및 개발자  
 > **소요 시간**: 약 2~3분 내외  
-> **비용**: 구글 계정만 있으면 100% 무료 (Google Colab Free Tier 활용)
+> **비용**: 구글 계정만 있으면 100% 무료 (Google Colab Free Tier CPU 활용)
 
 ---
 
 ## 📌 목차 (Table of Contents)
 1. [구글 코랩(Google Colab) 샌드박스 개요 및 장점](#1-구글-코랩google-colab-샌드박스-개요-및-장점)
-2. [원클릭 빠른 실행 (Quick Start - Copy & Paste)](#2-원클릭-빠른-실행-quick-start---copy--paste)
-3. [단계별 상세 설치 및 실행 가이드 (Installation & Launch)](#3-단계별-상세-설치-및-실행-가이드-installation--launch)
+2. [⚖️ 코랩 구동 실패(오류) vs 성공 코드 심층 비교 및 교체 내역](#2-️-코랩-구동-실패오류-vs-성공-코드-심층-비교-및-교체-내역)
+3. [📌 'your-username' 및 깃허브(GitHub) 저장소 URL 설정 상세 안내](#3--your-username-및-깃허브github-저장소-url-설정-상세-안내)
+4. [🚀 원클릭 빠른 실행 (Quick Start - 권장 성공 코드)](#4--원클릭-빠른-실행-quick-start---권장-성공-코드)
+5. [단계별 상세 설치 및 실행 가이드 (Installation & Launch)](#5-단계별-상세-설치-및-실행-가이드-installation--launch)
    - Step 1: 코랩 노트북 생성 및 런타임 연결
    - Step 2: Node.js LTS 환경 세팅 및 프로젝트 클론
    - Step 3: 패키지 의존성 설치 및 프로덕션 빌드
    - Step 4: 외부 접속 터널링(Cloudflare / LocalTunnel) 실행
-4. [운영 및 모니터링 가이드 (Operation & Monitoring)](#4-운영-및-모니터링-가이드-operation--monitoring)
+6. [운영 및 모니터링 가이드 (Operation & Monitoring)](#6-운영-및-모니터링-가이드-operation--monitoring)
    - 백그라운드 프로세스 확인 및 관리
    - 환경변수 및 API 키 설정 (Colab Secrets)
-5. [완전 삭제 및 자원 회수 가이드 (Teardown & Clean-up)](#5-완전-삭제-및-자원-회수-가이드-teardown--clean-up)
+7. [완전 삭제 및 자원 회수 가이드 (Teardown & Clean-up)](#7-완전-삭제-및-자원-회수-가이드-teardown--clean-up)
    - 1단계: 실행 프로세스 강제 종료 (Kill)
    - 2단계: 저장소 및 디렉토리 완전 삭제 (Purge)
-   - 3단계: 코랩 런타임 세션 연결 해제
-6. [자주 묻는 질문 및 트러블슈팅 (FAQ & Troubleshooting)](#6-자주-묻는-질문-및-트러블슈팅-faq--troubleshooting)
+   - 3단계: 코랩 런타임 세션 연결 해제 (Clean Reset)
+8. [자주 묻는 질문 및 트러블슈팅 (FAQ & Troubleshooting)](#8-자주-묻는-질문-및-트러블슈팅-faq--troubleshooting)
 
 ---
 
@@ -37,55 +39,139 @@ Google Colab은 구글이 제공하는 클라우드 기반 가상 머신(Ubuntu 
 
 ---
 
-## 2. 원클릭 빠른 실행 (Quick Start - Copy & Paste)
+## 2. ⚖️ 코랩 구동 실패(오류) vs 성공 코드 심층 비교 및 교체 내역
 
-새 구글 코랩 노트북([colab.research.google.com](https://colab.research.google.com))을 연 뒤, 아래의 코드 블록을 코드 셀에 붙여넣고 **[Shift + Enter]**를 누르면 모든 설치와 외부 접속 URL 생성이 자동으로 완료됩니다.
+구글 코랩 환경에서 발생하기 쉬운 주요 실패 사례와 이를 해결한 안정적인 성공 코드 구성을 비교한 내용입니다.
 
+| 구분 | ❌ 실패 사례 (오류 발생 원인) | ✅ 성공 코드 (개선 및 교체 내용) |
+| :--- | :--- | :--- |
+| **저장소 클론** | `!git clone https://github.com/your-username/pentalyze.git`<br>➔ `your-username`을 미변경한 채 실행하여 `fatal: repository not found` 에러로 중단됨 | 코랩의 인터랙티브 파라미터(`#@param`) 및 자동 검증 로직 적용. 만약 미변경 시 즉각적이고 친절한 교체 안내 메시지 출력 |
+| **서버 기동 대기** | `server = subprocess.Popen(...)`<br>`time.sleep(4)`<br>➔ 코랩 시스템 부하로 서버 초기화가 4초보다 늦어지면 터널 접속 시 **502 Bad Gateway** 발생 | 단순 시간 지연 대신 **`socket.connect_ex` 루프**를 구현하여 로컬 3000번 포트가 실제 응답할 때까지 대기 후 터널을 연결 |
+| **터널 도구 설치** | `!dpkg -i cloudflared.deb`<br>➔ 다른 백그라운드 apt 프로세스가 lock을 잡고 있거나 파일 손상 시 dpkg 오류 발생 | `/usr/local/bin/cloudflared`로 공식 단독 실행 바이너리를 직접 다운로드(`curl -L`)하여 패키지 충돌을 원천 차단 |
+| **작업 디렉토리** | 주피터 노트북의 `%cd` 명령이 재실행 시 꼬여 디렉토리를 찾지 못함 | 서브프로세스 실행 시 `cwd="/content/pentalyze"`를 명시적으로 강제 바인딩하여 항상 일관된 동작 보장 |
+
+---
+
+## 3. 📌 'your-username' 및 깃허브(GitHub) 저장소 URL 설정 상세 안내
+
+코드 내의 아래 구문에 대한 올바른 적용 방법입니다:
 ```python
-# ==============================================================================
-# 🚀 [Pentalyze] 구글 코랩 원클릭 자동 설치 & Cloudflare 터널 실행기
-# ==============================================================================
-
-# 1. 최신 Node.js 20.x LTS 설치
-!echo "📦 [1/4] Node.js 20.x LTS 설치 중..."
-!curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null 2>&1
-!sudo apt-get install -y nodejs > /dev/null 2>&1
-!node -v && npm -v
-
-# 2. Cloudflare 터널링 툴(cloudflared) 다운로드 및 설치
-!echo "🌐 [2/4] 외부 접속 터널링 도구 설치 중..."
-!wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-!dpkg -i cloudflared-linux-amd64.deb > /dev/null 2>&1
-
-# 3. 프로젝트 저장소 클론 및 패키지 설치
-!echo "📥 [3/4] Pentalyze 소스코드 클론 및 빌드 중..."
-%cd /content
-!rm -rf pentalyze
 # 본인의 Fork 저장소 또는 메인 저장소 URL로 교체 가능합니다
 !git clone https://github.com/your-username/pentalyze.git
-%cd /content/pentalyze
-!npm install --silent
+```
 
-# 4. 백그라운드로 개발/운영 서버 실행 및 외부 접속 URL 발급
-!echo "✨ [4/4] 서버 구동 및 보안 터널 개방 중..."
-import subprocess, time
+### ❓ 'your-username'에는 무엇을 넣어야 하나요?
+* **`your-username`**은 **본인의 깃허브 계정 아이디(Username)**를 의미합니다.
+* **적용 예시**:
+  * 만약 사용자의 GitHub 아이디가 `developer-id`라면:
+    ```bash
+    https://github.com/developer-id/pentalyze.git
+    ```
+  * 만약 사용자의 GitHub 아이디가 `user-account`라면:
+    ```bash
+    https://github.com/user-account/pentalyze.git
+    ```
 
-# Express / Vite 풀스택 서버 백그라운드 구동 (포트 3000)
-server = subprocess.Popen(["npm", "run", "dev"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-time.sleep(4)
+### 📋 깃허브 웹페이지에서 정확한 복사 URL 확인하는 법
+1. 본인의 GitHub에 로그인한 후, Fork(포크)해 둔 **Pentalyze 저장소 페이지**로 이동합니다.
+2. 저장소 상단의 초록색 **`[<> Code]`** 버튼을 클릭합니다.
+3. 드롭다운에서 **[HTTPS]** 탭을 선택한 뒤, 주소 우측의 **복사 아이콘(📋)**을 클릭합니다.
+4. 복사된 주소(`https://github.com/[내아이디]/pentalyze.git`)를 아래 코드의 `GITHUB_REPO_URL` 입력란에 그대로 붙여넣으시면 됩니다.
 
-print("\n" + "="*70)
+> 💡 **참고**: 아직 본인 계정으로 Fork(포크)하지 않고 먼저 테스트해 보려는 경우, 현재 열려있는 원본 저장소의 실제 주소를 입력하셔도 정상 구동됩니다.
+
+---
+
+## 4. 🚀 원클릭 빠른 실행 (Quick Start - 권장 성공 코드)
+
+새 구글 코랩 노트북([colab.research.google.com](https://colab.research.google.com))을 연 뒤, 아래의 코드 블록을 복사하여 코드 셀에 붙여넣고 **[Shift + Enter]**를 누르면 모든 설치, 빌드 및 외부 접속 URL 생성이 안정적으로 자동 완료됩니다.
+
+*(우측 폼에서 본인의 GitHub 저장소 URL을 바로 수정할 수 있습니다)*
+
+```python
+#@title 🚀 [Pentalyze] 구글 코랩 원클릭 자동 설치 & Cloudflare 터널 실행기 { display-mode: "form" }
+#@markdown 본인의 GitHub 저장소 URL을 입력해 주세요 (Fork한 본인의 계정 아이디를 입력)
+GITHUB_REPO_URL = "https://github.com/your-username/pentalyze.git" #@param {type:"string"}
+
+import os, sys, time, socket, subprocess
+
+# ==============================================================================
+# 0. 깃허브 저장소 주소 검증 ('your-username' 미변경 방지)
+# ==============================================================================
+if "your-username" in GITHUB_REPO_URL:
+    print("\n" + "!" * 70)
+    print("⚠️ [안내] GITHUB_REPO_URL에 'your-username'이 그대로 포함되어 있습니다!")
+    print("👉 위 폼 입력창 또는 코드에서 'your-username'을 본인의 GitHub 아이디로 변경해 주세요.")
+    print("   (예시: https://github.com/developer-id/pentalyze.git)")
+    print("!" * 70 + "\n")
+    raise ValueError("올바른 GitHub 저장소 URL을 입력한 후 다시 실행해 주세요.")
+
+print(f"🔗 사용할 저장소 주소: {GITHUB_REPO_URL}")
+
+# ==============================================================================
+# 1. 최신 Node.js 20.x LTS 설치 (충돌 방지 처리)
+# ==============================================================================
+print("📦 [1/4] Node.js 20.x LTS 환경 확인 및 설치 중...")
+subprocess.run("curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - > /dev/null 2>&1", shell=True)
+subprocess.run("sudo apt-get install -y nodejs > /dev/null 2>&1", shell=True)
+node_ver = subprocess.getoutput("node -v")
+npm_ver = subprocess.getoutput("npm -v")
+print(f"✅ Node.js: {node_ver} / npm: {npm_ver}")
+
+# ==============================================================================
+# 2. Cloudflare 터널링 툴 바이너리 설치 (dpkg 잠금 충돌 원천 차단)
+# ==============================================================================
+print("🌐 [2/4] 외부 접속 터널링 도구(cloudflared) 설치 중...")
+subprocess.run("curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared", shell=True)
+subprocess.run("chmod +x /usr/local/bin/cloudflared", shell=True)
+
+# ==============================================================================
+# 3. 프로젝트 저장소 클론 및 패키지 설치
+# ==============================================================================
+print("📥 [3/4] Pentalyze 소스코드 클론 및 패키지 설치 중...")
+os.chdir("/content")
+subprocess.run("rm -rf /content/pentalyze", shell=True)
+clone_res = subprocess.run(f"git clone {GITHUB_REPO_URL} /content/pentalyze", shell=True)
+if clone_res.returncode != 0:
+    raise RuntimeError("❌ Git 저장소를 복제하지 못했습니다. URL과 공개(Public) 여부를 확인해 주세요.")
+
+os.chdir("/content/pentalyze")
+subprocess.run("npm install", shell=True)
+
+# ==============================================================================
+# 4. 풀스택 서버 백그라운드 구동 & 소켓 포트(3000) 감지 후 터널 개방
+# ==============================================================================
+print("✨ [4/4] Express/Vite 서버 구동 중...")
+server_process = subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+
+# 3000번 포트가 실제로 열릴 때까지 안전 대기 (502 Bad Gateway 방지)
+def wait_for_port(port=3000, timeout=30):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if sock.connect_ex(('127.0.0.1', port)) == 0:
+                return True
+        time.sleep(1)
+    return False
+
+print("⏳ 로컬 서버 포트(3000) 바인딩 대기 중...")
+if wait_for_port(3000, timeout=35):
+    print("✅ 로컬 서버가 포트 3000에서 정상 응답을 시작했습니다!")
+else:
+    print("⚠️ 포트 감지 시간 초과: 터널 연결을 계속 시도합니다.")
+
+print("\n" + "=" * 70)
 print("🎉 Pentalyze 클라우드 서버가 성공적으로 실행되었습니다!")
-print("👉 아래 출력창에 나타나는 'https://*.trycloudflare.com' 주소를 클릭하세요.")
-print("="*70 + "\n")
+print("👉 아래 로그에 표시되는 'https://*.trycloudflare.com' 주소를 클릭하세요.")
+print("=" * 70 + "\n")
 
 # Cloudflare 임시 보안 터널 오픈 (전 세계 어디서든 브라우저로 접속 가능)
-!cloudflared tunnel --url http://localhost:3000
+subprocess.run("cloudflared tunnel --url http://localhost:3000", shell=True)
 ```
 
 ---
 
-## 3. 단계별 상세 설치 및 실행 가이드 (Installation & Launch)
+## 5. 단계별 상세 설치 및 실행 가이드 (Installation & Launch)
 
 ### Step 1: 코랩 노트북 준비
 1. 웹 브라우저에서 [Google Colab](https://colab.research.google.com)에 접속하여 로그인합니다.
@@ -102,9 +188,9 @@ print("="*70 + "\n")
 !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 !sudo apt-get install -y nodejs
 
-# 저장소 클론 및 이동
+# 저장소 클론 (본인의 GitHub 아이디가 developer-id인 경우의 예시)
 %cd /content
-!git clone https://github.com/your-username/pentalyze.git
+!git clone https://github.com/developer-id/pentalyze.git
 %cd /content/pentalyze
 ```
 
@@ -124,30 +210,27 @@ print("="*70 + "\n")
 
 구글 코랩 가상머신의 로컬 포트(`localhost:3000`)는 기본적으로 외부 인터넷에 노출되지 않으므로, 터널링 도구를 통해 안전한 외부 HTTPS 도메인을 연결합니다.
 
-#### 방법 A. Cloudflare Tunnel (가장 안정적 / 추천)
-회원가입이나 인증 토큰 없이 구글의 클라우드플레어 공식 인프라를 통해 고속 HTTPS 주소를 부여받습니다.
+#### 방법 A. Cloudflare Tunnel (가장 안정적 / 적극 권장)
+회원가입이나 인증 토큰 없이 고속 글로벌 HTTPS 주소를 부여받습니다.
 
 ```python
-# Cloudflare 패키지 설치
-!wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-!dpkg -i cloudflared-linux-amd64.deb
+# Cloudflare 바이너리 설치 및 실행
+!curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
 
 # 백그라운드로 Node 서버 구동
 import subprocess, time
-subprocess.Popen(["npm", "run", "dev"])
-time.sleep(3)
+subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+time.sleep(5)
 
 # 터널 개방 (출력되는 https://*.trycloudflare.com 링크 접속)
 !cloudflared tunnel --url http://localhost:3000
 ```
 
-#### 방법 B. LocalTunnel (단순 실행)
-별도 `.deb` 설치 없이 Node 패키지 생태계의 `npx` 명령으로 즉시 구동하는 방법입니다.
-
+#### 방법 B. LocalTunnel (대체 옵션)
 ```python
 import subprocess, time
-subprocess.Popen(["npm", "run", "dev"])
-time.sleep(3)
+subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+time.sleep(5)
 
 # 터널링 실행 (외부 공인 IP 확인 후 링크 접속)
 !curl ipv4.icanhazip.com
@@ -156,7 +239,7 @@ time.sleep(3)
 
 ---
 
-## 4. 운영 및 모니터링 가이드 (Operation & Monitoring)
+## 6. 운영 및 모니터링 가이드 (Operation & Monitoring)
 
 ### 📊 프로세스 동작 상태 확인
 코랩 셀에서 현재 백그라운드로 실행 중인 서버 프로세스 상태를 확인할 수 있습니다.
@@ -191,7 +274,7 @@ except Exception as e:
 
 ---
 
-## 5. 완전 삭제 및 자원 회수 가이드 (Teardown & Clean-up)
+## 7. 완전 삭제 및 자원 회수 가이드 (Teardown & Clean-up)
 
 테스트 및 체험이 완료된 후, 클라우드 환경을 깨끗하게 정리하고 자원을 회수하는 방법입니다.
 
@@ -211,7 +294,7 @@ except Exception as e:
 ```bash
 %cd /content
 !rm -rf /content/pentalyze
-!rm -f /content/cloudflared-linux-amd64.deb
+!rm -f /usr/local/bin/cloudflared
 !echo "🗑️ Pentalyze 디렉토리 및 설치 파일이 완벽히 삭제되었습니다."
 ```
 
@@ -224,11 +307,11 @@ except Exception as e:
 
 ---
 
-## 6. 자주 묻는 질문 및 트러블슈팅 (FAQ & Troubleshooting)
+## 8. 자주 묻는 질문 및 트러블슈팅 (FAQ & Troubleshooting)
 
 ### Q1. 브라우저 창을 닫으면 코랩 서버가 꺼지나요?
 * 네, 구글 코랩 무료 티어는 웹 브라우저 탭을 닫거나 일정 시간 동안 인터랙션이 없으면 백그라운드 세션이 절전/종료 상태로 전환됩니다.
-* 장시간 운영이 목적이 아닌 **"무설치 테스트베드 / 빠른 검증 및 기능 체험"** 목적으로 활용하시는 것을 강력히 권장합니다.
+* 장시간 운영이 목적이 아닌 **"무설치 테스트베드 / 빠른 검증 및 기능 체험"** 목적으로 활용하시는 것을 권장합니다.
 
 ### Q2. Cloudflare 터널 주소로 접속했는데 보안 경고가 나타납니다.
 * Cloudflare의 무료 임시 터널(`trycloudflare.com`) 접속 시 첫 화면에 경고성 안내 페이지(Notice)가 나타날 수 있습니다. 이는 피싱 방지를 위한 Cloudflare의 기본 정책이며, 중앙의 **[Visit Site / 계속하기]** 버튼을 클릭하시면 정상적으로 Pentalyze 앱이 로드됩니다.

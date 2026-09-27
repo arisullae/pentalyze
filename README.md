@@ -204,24 +204,33 @@ Pentalyze는 웹 표준 기술인 **PWA(Progressive Web App)**를 완벽 지원�
 
 로컬 PC에 Node.js나 개발 환경을 전혀 설치하지 않고, 웹 브라우저만으로 클라우드 가상머신(Ubuntu)에서 안전하게 Pentalyze를 테스트·운영하고 흔적 없이 삭제할 수 있습니다.
 
+* **💡 `your-username` 안내**:  
+  `https://github.com/your-username/pentalyze.git`에서 `your-username`은 **본인의 깃허브 계정 아이디**(예: `developer-id` 등)로 교체하시거나, 본인 계정으로 Fork한 저장소 페이지 상단의 초록색 **[<> Code]** 버튼 ➔ **[HTTPS]** 복사 주소를 그대로 붙여넣으시면 됩니다.
+
 * **원클릭 설치 및 실행 (Colab 셀에 붙여넣기)**:
   ```python
-  # Node.js 20.x 설치 및 저장소 복제
-  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
-  !git clone https://github.com/your-username/pentalyze.git && cd pentalyze && npm install
+  # 1. Node.js 20.x 환경 구성 및 Cloudflare 터널 도구 설치
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
   
-  # 백그라운드 서버 구동 및 Cloudflare 무료 임시 터널 오픈
+  # 2. 저장소 복제 ('your-username'을 본인의 GitHub 아이디로 교체)
+  # (예: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. 백그라운드 서버 구동 및 외부 접속 URL 발급
   import subprocess, time
   subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
-  time.sleep(4)
-  !wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && dpkg -i cloudflared-linux-amd64.deb > /dev/null 2>&1
+  time.sleep(5) # 서버 부팅 대기
   !cloudflared tunnel --url http://localhost:3000
   ```
-  *(출력창에 생성되는 `https://*.trycloudflare.com` URL로 전 세계 어디서든 즉시 접속 가능)*
+  *(출력창에 생성되는 `https://*.trycloudflare.com` URL로 전 세계 어디서든 브라우저로 즉시 접속 가능)*
 * **완전 삭제 (Teardown & Purge)**:
   ```bash
   # 1. 프로세스 중단: !pkill -f node && !pkill -f cloudflared
-  # 2. 파일 영구 삭제: !rm -rf /content/pentalyze
+  # 2. 파일 영구 삭제: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
   # 3. 런타임 초기화: 코랩 메뉴 [런타임] ➔ [런타임 연결 해제 및 삭제] 클릭 시 100% 초기화
   ```
 

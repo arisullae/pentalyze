@@ -176,6 +176,102 @@ Pentalyze полностью поддерживает веб-стандарт **
 
 ---
 
+### 4. ☁️ Запуск и Удаление в Облачной Песочнице Google Colab (Zero-Install)
+
+> **Подробные скрипты в 1 клик и руководство по эксплуатации**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Вы можете безопасно тестировать, запускать и удалять Pentalyze в облачной виртуальной машине (Ubuntu) без установки Node.js или инструментов разработки на локальный ПК, используя только веб-браузер.
+
+* **💡 Указание по `your-username`**:  
+  В адресе `https://github.com/your-username/pentalyze.git` замените `your-username` на **ваше имя пользователя GitHub** (например: `developer-id`), либо вставьте HTTPS-адрес вашего форкнутого репозитория, скопированный через зеленую кнопку **[<> Code]** ➔ **[HTTPS]**.
+
+* **Установка и запуск в один клик (Вставьте в ячейку Colab)**:
+  ```python
+  # 1. Настройка окружения Node.js 20.x и установка утилиты туннелирования Cloudflare
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. Клонирование репозитория (замените 'your-username' на ваш логин GitHub)
+  # (например: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. Фоновый запуск сервера и получение публичного URL
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # Ожидание запуска сервера
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(Нажмите на ссылку `https://*.trycloudflare.com`, сформированную в выводе, для мгновенного доступа к Pentalyze с любого устройства)*
+* **Полное Удаление (Teardown & Purge)**:
+  ```bash
+  # 1. Остановка процессов: !pkill -f node && !pkill -f cloudflared
+  # 2. Удаление файлов: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. Сброс среды: В меню Colab выберите [Среда выполнения] ➔ [Отключиться и удалить среду выполнения]
+  ```
+
+---
+
+## 📂 Структура Проекта (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # Многоязычные руководства и документы технической передачи
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [Важно] Анализ взаимодействий 3D/XR и план доработок
+│   ├── GOOGLE_COLAB_GUIDE.md     # [Новое] Запуск, работа и удаление в песочнице Google Colab
+│   └── README_*.md               # Глобальные руководства пользователя на 9 языках
+├── public/                       # Манифест PWA и статические ресурсы
+├── src/
+│   ├── components/
+│   │   ├── presets/              # Модули примеров предложений для каждого языка
+│   │   ├── Book3D.tsx            # 3D-перелистывание страниц и режим сопоставления
+│   │   ├── Header.tsx            # Адаптивная шапка, установка PWA и выбор языка
+│   │   ├── SentenceInput.tsx     # Ввод текста и 5-мерный аналитический пайплайн
+│   │   ├── BookshelfModal.tsx    # Личная сохраненная библиотека
+│   │   ├── ExportModal.tsx       # Экспорт в Markdown / PDF
+│   │   └── SettingsModal.tsx     # Модальное окно настройки API-ключей (BYOK)
+│   ├── services/
+│   │   ├── ai.ts                 # Мульти-LLM пайплайн (Gemini / OpenAI)
+│   │   ├── tts.ts                # Гибридный речевой движок WebSpeech & ElevenLabs
+│   │   └── storage.ts            # Управление постоянным хранилищем LocalStorage
+│   ├── i18n/
+│   │   ├── locales/              # Словари для 10 языков (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # Реестр и маршрутизация 10 языков
+│   │   └── types.ts              # Определение типов словарей
+│   ├── App.tsx                   # Главный компонент приложения
+│   └── main.tsx                  # Точка входа React с регистрацией сервис-воркера PWA
+├── package.json
+├── start.bat                     # Пакетный файл автозапуска в 1 клик для Windows
+├── start.sh                      # Скрипт оболочки автозапуска в 1 клик для Mac/Linux
+└── README.md
+```
+
+---
+
+## 🛠️ Техническая Передача для Разработчиков и Администраторов (Technical Handover)
+
+> **Детальный Технический Анализ и Руководство**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **Руководство по Облачному Тестбеду**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Для инженеров, которые форкают этот проект для **будущей разработки, улучшения взаимодействий, производственного развертывания и поддержки**, задокументированы тонкие особенности работы кнопок перетаскивания при отключенном наклоне (гироскоп/параллакс) в режимах **'3D Реалистичный'** и **'Пространство XR'**, а также развертывание облачного стенда на базе Google Colab.
+
+### 📌 Резюме Ключевых Вопросов и План Доработок
+1. **Анализ Поведения**:
+   * **Наклон ВКЛ**: Непрерывная проверка попаданий (Continuous Hit-Testing) потоком компоновки браузера при движении гироскопа/мыши обеспечивает мгновенный отклик.
+   * **Наклон ВЫКЛ**: При фиксированном 3D-угле (`rotateX: 14~18deg`) кэширование субпиксельной растеризации и нелинейное угловое расхождение между 2D-экраном и плоскостью 3D-проекции могут вызывать ощущение легкого сопротивления.
+2. **Рекомендуемый План Действий**:
+   * **Краткосрочно**: Динамическая адаптация порога перетаскивания под экраны высокой плотности (Retina/Mobile) и защитный таймер `onLostPointerCapture`.
+   * **Среднесрочно**: Обратное проецирование координат экран-в-локальное-пространство с помощью `DOMMatrix.inverse()`.
+   * **Долгосрочно (Следующее поколение)**: Полный переход на виртуальный 3D-холст с нативным Raycaster на Three.js / WebGL / WebXR.
+3. **Облачный Тестовый Стенд (Cloud Sandbox Testbed)**:
+   * Удаленная проверка на реальных мобильных устройствах (iOS Safari, Android Chrome) без настройки локальной среды благодаря туннелям Google Colab. Подробнее см. [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md).
+
+Подробные архитектурные диаграммы, математические формулы координат и матрицы тестирования браузеров см. в [Документе Технической Передачи](./DEVELOPER_HANDOVER_3D_XR_DRAG.md).
+
+---
+
 ## 📄 Лицензия
 
 Проект распространяется под открытой лицензией **MIT License**. Разрешены свободное использование, модификация и коммерческая дистрибуция.

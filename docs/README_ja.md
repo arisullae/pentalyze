@@ -179,6 +179,102 @@ Pentalyze は、Web標準技術である **PWA (Progressive Web App)** に完全
 
 ---
 
+### 4. ☁️ Google Colab クラウドサンドボックス実行＆完全削除 (Zero-Install)
+
+> **詳細ワンクリックスクリプト＆運用ガイド**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+ローカルPCにNode.jsや開発環境を一切インストールすることなく、Webブラウザのみでクラウド仮想マシン(Ubuntu)上で安全にPentalyzeをテスト・運用し、痕跡を残さず削除できます。
+
+* **💡 `your-username` のご案内**:  
+  `https://github.com/your-username/pentalyze.git` の `your-username` は、**ご自身のGitHubユーザー名**(例: `developer-id`)に置き換えるか、ご自身のアカウントにForkしたリポジトリ上部の緑色 **[<> Code]** ➔ **[HTTPS]** でコピーしたURLをそのまま貼り付けてください。
+
+* **ワンクリックインストール＆実行 (Colabセルに貼り付け)**:
+  ```python
+  # 1. Node.js 20.x 環境構築および Cloudflare トンネルツールのインストール
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. リポジトリのクローン ('your-username' を自身のGitHub IDに置換)
+  # (例: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. バックグラウンドサーバー起動および外部公開URLの発行
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # サーバー起動待機
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(出力に表示される `https://*.trycloudflare.com` URLから、世界中どこからでも即座にブラウザでアクセス可能です)*
+* **完全削除 (Teardown & Purge)**:
+  ```bash
+  # 1. プロセスの停止: !pkill -f node && !pkill -f cloudflared
+  # 2. ファイルの完全削除: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. ランタイムの初期化: Colabメニューの [ランタイム] ➔ [ランタイムの接続を解除して削除] を選択
+  ```
+
+---
+
+## 📂 プロジェクト構成 (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # 多言語ガイドおよび開発・運用者向け技術引継ぎ文書
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [必読] 3D/XRドラッグ操作の技術分析およびロードマップ
+│   ├── GOOGLE_COLAB_GUIDE.md     # [新規] Google Colab クラウド無環境実行・運用・削除ガイド
+│   └── README_*.md               # 9言語グローバルユーザーガイド
+├── public/                       # PWAマニフェストおよび静的アセット
+├── src/
+│   ├── components/
+│   │   ├── presets/              # 各言語別例文プリセットモジュール
+│   │   ├── Book3D.tsx            # 3D立体ページめくり＆分割比較ビュー
+│   │   ├── Header.tsx            # レスポンシブヘッダー・PWAインストール・言語切替
+│   │   ├── SentenceInput.tsx     # 文章入力および5次元解析パイプライン
+│   │   ├── BookshelfModal.tsx    # 保存した文庫本棚ストレージ
+│   │   ├── ExportModal.tsx       # Markdown / PDFエクスポート
+│   │   └── SettingsModal.tsx     # BYOK APIキー設定モーダル
+│   ├── services/
+│   │   ├── ai.ts                 # Gemini / OpenAI マルチLLMパイプライン
+│   │   ├── tts.ts                # WebSpeech & ElevenLabs ハイブリッドTTSエンジン
+│   │   └── storage.ts            # LocalStorage 永続化マネージャー
+│   ├── i18n/
+│   │   ├── locales/              # 10言語辞書 (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # 10言語登録およびマッピング
+│   │   └── types.ts              # 辞書型定義
+│   ├── App.tsx                   # メインアプリケーション
+│   └── main.tsx                  # PWAサービスワーカー登録を含むReactエントリポイント
+├── package.json
+├── start.bat                     # Windows向けワンクリック自動実行バッチ
+├── start.sh                      # Mac/Linux向けワンクリック自動実行シェル
+└── README.md
+```
+
+---
+
+## 🛠️ 開発・改善・運用者のための技術ハンドオーバー (Technical Handover)
+
+> **詳細技術分析＆対応ガイド**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **クラウドテストベッド運用ガイド**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+本プロジェクトをフォーク(Fork)して**今後の機能開発、UI/UX向上、本番環境へのデプロイおよび運用**を担当するエンジニアのために、「3D立体」および「XR空間」モードでチルト(ジャイロ/パララックス)をOFFにした際の上・下部「掴んでめくる」ボタンの微小な挙動特性と対応策、ならびにGoogle Colabを活用したクラウドサンドボックステスト環境の構築手順をまとめています。
+
+### 📌 主要課題の要約と対応ロードマップ
+1. **挙動分析**:
+   * **チルトON時**: マウスやジャイロの動きによりブラウザのコンポジタスレッドが毎フレーム当たり判定(Continuous Hit-Testing)を再評価するため、即座にドラッグに反応します。
+   * **チルトOFF時**: 静的な3D回転角度(`rotateX: 14~18deg`)で固定されるため、サブピクセルラスタライズのキャッシュや2D画面座標と3D投影面との非線形な角度差により、極めて微小な操作抵抗感が感じられる場合があります。
+2. **推奨対応ロードマップ**:
+   * **短期**: 高解像度(Retina/モバイル)DPIに応じたドラッグしきい値(Threshold)の動的調整＆`onLostPointerCapture`安全タイマーガードの実装
+   * **中期**: `DOMMatrix.inverse()`による3D逆投影(スクリーン座標からローカル座標への逆変換)の補正計算
+   * **長期 (次世代)**: Three.js / WebGL / WebXRネイティブのRaycasterによる完全仮想3Dキャンバスへの移行
+3. **クラウドサンドボックステストベッド (Cloud Sandbox Testbed)**:
+   * ローカルPCの環境設定なしで、Google Colabのトンネリングを通じて実機端末(iOS Safari, Android Chrome)での3D/XRドラッグジェスチャーをリモート検証可能です。[GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md) をご参照ください。
+
+アーキテクチャ図、数学的座標計算式、ブラウザ別(Chrome/Safari/Firefox)QAマトリクスについては **[技術ハンドオーバー文書](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)** をご覧ください。
+
+---
+
 ## 📄 ライセンス
 
 このプロジェクトは **MITライセンス** のもとで公開されています。商用利用・改変・再配布が自由に許可されています。

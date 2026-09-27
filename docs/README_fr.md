@@ -176,6 +176,102 @@ Pentalyze est entièrement conforme aux normes **PWA (Progressive Web App)**. Vo
 
 ---
 
+### 4. ☁️ Exécution et Suppression sur Google Colab Cloud Sandbox (Zero-Install)
+
+> **Scripts 1-clic détaillés & guide opérationnel** : 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Vous pouvez tester, exécuter et supprimer Pentalyze dans une machine virtuelle cloud (Ubuntu) sans aucune installation locale de Node.js ou d'outils de développement, directement via votre navigateur web.
+
+* **💡 Consignes pour `your-username`** :  
+  Dans `https://github.com/your-username/pentalyze.git`, remplacez `your-username` par **votre nom d'utilisateur GitHub** (ex: `developer-id`), ou collez directement l'adresse HTTPS de votre dépôt forké accessible via le bouton vert **[<> Code]** ➔ **[HTTPS]**.
+
+* **Installation & Exécution en un clic (À coller dans une cellule Colab)** :
+  ```python
+  # 1. Configuration de l'environnement Node.js 20.x & installation de l'outil tunnel Cloudflare
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. Clonage du dépôt (remplacez 'your-username' par votre identifiant GitHub)
+  # (ex: !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. Lancement du serveur en arrière-plan & génération de l'URL publique
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # Attente du démarrage du serveur
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(Cliquez sur l'URL `https://*.trycloudflare.com` générée dans la sortie pour accéder instantanément à Pentalyze depuis n'importe quel appareil dans le monde)*
+* **Suppression Complète (Teardown & Purge)** :
+  ```bash
+  # 1. Arrêter les processus : !pkill -f node && !pkill -f cloudflared
+  # 2. Supprimer définitivement les fichiers : !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. Réinitialiser l'environnement : Menu Colab [Exécution] ➔ [Déconnecter et supprimer l'environnement d'exécution]
+  ```
+
+---
+
+## 📂 Structure du Projet (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # Guides multilingues et documents de passation technique
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [Fondamental] Analyse des interactions 3D/XR et feuille de route
+│   ├── GOOGLE_COLAB_GUIDE.md     # [Nouveau] Guide de test, exécution et suppression Google Colab
+│   └── README_*.md               # Guides utilisateurs globaux en 9 langues
+├── public/                       # Manifeste PWA et ressources statiques
+├── src/
+│   ├── components/
+│   │   ├── presets/              # Modules de phrases d'exemples par langue
+│   │   ├── Book3D.tsx            # Tourne-page 3D et vue de comparaison côte à côte
+│   │   ├── Header.tsx            # En-tête réactif, installation PWA et sélection de langue
+│   │   ├── SentenceInput.tsx     # Saisie de texte et pipeline d'analyse en 5 dimensions
+│   │   ├── BookshelfModal.tsx    # Bibliothèque personnelle de stockage
+│   │   ├── ExportModal.tsx       # Exportation Markdown / PDF
+│   │   └── SettingsModal.tsx     # Modal de configuration des clés API (BYOK)
+│   ├── services/
+│   │   ├── ai.ts                 # Pipeline multi-LLM (Gemini / OpenAI)
+│   │   ├── tts.ts                # Moteur vocal hybride WebSpeech & ElevenLabs
+│   │   └── storage.ts            # Gestionnaire de persistance LocalStorage
+│   ├── i18n/
+│   │   ├── locales/              # Dictionnaires pour 10 langues (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # Enregistrement et mappage des 10 langues
+│   │   └── types.ts              # Définitions de types pour les dictionnaires
+│   ├── App.tsx                   # Composant racine de l'application
+│   └── main.tsx                  # Point d'entrée React avec enregistrement du service worker PWA
+├── package.json
+├── start.bat                     # Fichier batch de lancement automatique sous Windows
+├── start.sh                      # Script shell de lancement automatique sous Mac/Linux
+└── README.md
+```
+
+---
+
+## 🛠️ Passation Technique pour Développeurs & Administrateurs (Technical Handover)
+
+> **Analyse Technique & Guide d'Action Détaillé** : 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **Guide du Banc d'Essai Cloud** : 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Pour les ingénieurs qui forkeront ce projet afin d'assurer **les futurs développements, l'optimisation des interactions, le déploiement en production et la maintenance**, les caractéristiques comportementales fines des boutons de glissement haut/bas lors de la désactivation de l'inclinaison (gyroscope/parallaxe) en modes **'3D Réaliste'** et **'Espace XR'**, ainsi que la mise en place d'un banc d'essai sous Google Colab, sont intégralement documentées.
+
+### 📌 Synthèse des Enjeux Clés & Feuille de Route
+1. **Analyse Comportementale** :
+   * **Inclinaison ACTIVE** : L'évaluation continue des collisions (Continuous Hit-Testing) assurée par le thread compositeur du navigateur sous l'impulsion du gyroscope/souris garantit une réactivité immédiate au glisser.
+   * **Inclinaison DESACTIVE** : Avec une rotation 3D statique (`rotateX: 14~18deg`), la mise en cache de la rastérisation sous-pixel et la divergence angulaire non linéaire entre l'écran 2D et le plan de projection 3D peuvent provoquer une sensation subtile de résistance au glissement.
+2. **Feuille de Route Recommandée** :
+   * **Court terme** : Seuil de glissement adaptatif haute densité (Retina/Mobile) & garde de sécurité par timer `onLostPointerCapture`.
+   * **Moyen terme** : Calcul de projection inverse coordonnées écran vers repère local via `DOMMatrix.inverse()`.
+   * **Long terme (Génération future)** : Migration complète vers un canevas 3D virtuel natif avec moteur Raycaster sous Three.js / WebGL / WebXR.
+3. **Banc d'Essai Cloud (Cloud Sandbox Testbed)** :
+   * Validation à distance sur terminaux mobiles réels (iOS Safari, Android Chrome) sans installation locale grâce aux tunnels Google Colab. Consultez [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md).
+
+Pour les schémas d'architecture détaillés, les formules mathématiques et les matrices d'assurance qualité multi-navigateurs, veuillez vous référer au [Document de Passation Technique](./DEVELOPER_HANDOVER_3D_XR_DRAG.md).
+
+---
+
 ## 📄 Licence
 
 Ce projet est distribué sous la **Licence MIT**. Modification, utilisation commerciale et redistribution sont entièrement libres.

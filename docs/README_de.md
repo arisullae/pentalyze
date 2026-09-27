@@ -176,6 +176,102 @@ Pentalyze unterstützt den modernen **PWA (Progressive Web App)**-Standard. Die 
 
 ---
 
+### 4. ☁️ Google Colab Cloud-Sandbox Ausführung & Bereinigung (Zero-Install)
+
+> **Detaillierte One-Click-Skripte & Betriebsleitfaden**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Sie können Pentalyze ohne jegliche lokale Installation von Node.js oder Entwicklungstools sicher in einer Cloud-VM (Ubuntu) über Ihren Webbrowser testen, betreiben und rückstandslos entfernen.
+
+* **💡 Hinweis zu `your-username`**:  
+  Ersetzen Sie in `https://github.com/your-username/pentalyze.git` den Platzhalter `your-username` durch **Ihren GitHub-Benutzernamen** (z. B. `developer-id`) oder fügen Sie die geklonte HTTPS-URL Ihres Fork-Repositories über die grüne Schaltfläche **[<> Code]** ➔ **[HTTPS]** ein.
+
+* **One-Click Installation & Start (in Colab-Zelle einfügen)**:
+  ```python
+  # 1. Node.js 20.x Umgebung einrichten & Cloudflare Tunnel-Tool installieren
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs > /dev/null 2>&1
+  !curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+  
+  # 2. Repository klonen ('your-username' durch eigene GitHub-ID ersetzen)
+  # (z. B. !git clone https://github.com/developer-id/pentalyze.git /content/pentalyze)
+  !rm -rf /content/pentalyze
+  !git clone https://github.com/your-username/pentalyze.git /content/pentalyze
+  %cd /content/pentalyze
+  !npm install
+  
+  # 3. Hintergrund-Server starten & öffentlichen Tunnel-Link generieren
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(5) # Wartezeit auf Server-Start
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(Über die in der Ausgabe generierte URL `https://*.trycloudflare.com` ist Pentalyze sofort weltweit im Browser aufrufbar)*
+* **Vollständige Bereinigung (Teardown & Purge)**:
+  ```bash
+  # 1. Prozesse beenden: !pkill -f node && !pkill -f cloudflared
+  # 2. Dateien dauerhaft löschen: !rm -rf /content/pentalyze && !rm -f /usr/local/bin/cloudflared
+  # 3. Laufzeitumgebung zurücksetzen: Im Colab-Menü [Laufzeit] ➔ [Laufzeit trennen und löschen] wählen
+  ```
+
+---
+
+## 📂 Projektstruktur (Project Directory)
+
+```
+pentalyze/
+├── docs/                         # Mehrsprachige Anleitungen & technische Übergabedokumente
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [Kern] 3D/XR Drag-Interaktionsanalyse & Roadmap
+│   ├── GOOGLE_COLAB_GUIDE.md     # [Neu] Google Colab Cloud-Sandbox Test-, Betriebs- & Bereinigungsleitfaden
+│   └── README_*.md               # Globale Benutzerhandbücher in 9 Sprachen
+├── public/                       # PWA-Manifest und statische Assets
+├── src/
+│   ├── components/
+│   │   ├── presets/              # Beispielsatz-Module für jede Sprache
+│   │   ├── Book3D.tsx            # 3D-Buchumblättern & geteilte Vergleichsansicht
+│   │   ├── Header.tsx            # Responsiver Header, PWA-Installation & Sprachauswahl
+│   │   ├── SentenceInput.tsx     # Satzeingabe & 5-Dimensionen-Analyse-Pipeline
+│   │   ├── BookshelfModal.tsx    # Persönliche Bibliothek
+│   │   ├── ExportModal.tsx       # Markdown- / PDF-Export
+│   │   └── SettingsModal.tsx     # BYOK API-Schlüssel-Modal
+│   ├── services/
+│   │   ├── ai.ts                 # Gemini / OpenAI Multi-LLM-Pipeline
+│   │   ├── tts.ts                # WebSpeech & ElevenLabs hybride Sprachausgabe
+│   │   └── storage.ts            # LocalStorage Persistenz-Manager
+│   ├── i18n/
+│   │   ├── locales/              # Wörterbücher für 10 Sprachen (ko, en, ja, hi, es, fr, de, it, pt, ru)
+│   │   ├── translations.ts       # Registrierung und Zuordnung von 10 Sprachen
+│   │   └── types.ts              # Typdefinitionen für Wörterbücher
+│   ├── App.tsx                   # Hauptanwendungs-Komponente
+│   └── main.tsx                  # React-Einstiegspunkt mit Service-Worker-Registrierung
+├── package.json
+├── start.bat                     # Windows Ein-Klick-Autostart-Batch-Datei
+├── start.sh                      # Mac/Linux Ein-Klick-Autostart-Shell-Skript
+└── README.md
+```
+
+---
+
+## 🛠️ Technische Übergabe für Entwickler & Betreiber (Technical Handover)
+
+> **Detaillierte Analyse & Maßnahmen**: 📄 [DEVELOPER_HANDOVER_3D_XR_DRAG.md](./DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **Cloud-Testbed Leitfaden**: 📄 [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md)
+
+Für Ingenieure, die dieses Projekt forken, um **zukünftige Weiterentwicklungen, Interaktionsverbesserungen, Produktions-Deployments und Betrieb** zu übernehmen, sind die Verhaltenscharakteristika der oberen und unteren Drag-Buttons bei deaktiviertem Neigungssensor (Gyroskop/Parallaxe) im **'3D-Realistisch'**- und **'XR-Raum'**-Modus sowie die Einrichtung einer Testumgebung via Google Colab dokumentiert.
+
+### 📌 Zusammenfassung der Kernpunkte & Roadmap
+1. **Verhaltensanalyse**:
+   * **Tilt AKTIV**: Kontinuierliches Hit-Testing des Browser-Compositor-Threads durch Gyro/Maus-Deltas ermöglicht sofortige Drag-Reaktion.
+   * **Tilt INAKTIV**: Bei fixer 3D-Drehung (`rotateX: 14~18deg`) können Subpixel-Rasterungs-Caching und nicht-lineare Winkelabweichungen zwischen 2D-Bildschirm und 3D-Projektionsebene zu einem subtilen Bedienungswiderstand führen.
+2. **Empfohlene Maßnahmen**:
+   * **Kurzfristig**: Dynamische Schwellenwert-Anpassung für High-DPI/Mobilgeräte & `onLostPointerCapture` Failsafe-Timer-Guard.
+   * **Mittelfristig**: Inverse Projektionsberechnung von Bildschirm- zu lokalen Koordinaten mittels `DOMMatrix.inverse()`.
+   * **Langfristig (Next-Gen)**: Vollständige Migration auf eine virtuelle 3D-Canvas mit nativer Three.js / WebGL / WebXR Raycaster-Engine.
+3. **Cloud-Sandbox Testbed**:
+   * Remote-Validierung auf realen Mobilgeräten (iOS Safari, Android Chrome) ohne lokale Umgebungseinrichtung über Google Colab Tunneling. Details siehe [GOOGLE_COLAB_GUIDE.md](./GOOGLE_COLAB_GUIDE.md).
+
+Ausführliche Architekturdiagramme, mathematische Koordinatenformeln und Browser-QA-Matrizen finden Sie im [Technischen Übergabedokument](./DEVELOPER_HANDOVER_3D_XR_DRAG.md).
+
+---
+
 ## 📄 Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Freie Nutzung, Modifikation und Weitergabe sind gestattet.
