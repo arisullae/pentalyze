@@ -1,0 +1,236 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    background-color: #0c0d10;
+    color: #e2e8f0;
+    overflow-x: hidden;
+  }
+
+  .font-serif-kr {
+    font-family: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  }
+}
+
+/* 3D 책자 공간 & 원근감 */
+.book-stage-3d {
+  perspective: 2600px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.book-body-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* 페이지 앞뒷면 3D 렌더링 */
+.page-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.page-back-horizontal {
+  transform: rotateY(180deg);
+}
+
+.page-back-vertical {
+  transform: rotateX(180deg);
+}
+
+/* =======================================================
+   수평 플립 (PC / 태블릿 / 모바일 가로): 우 -> 좌 종이 말림 모션
+   ======================================================= */
+@keyframes paperCurlNext {
+  0% {
+    transform: rotateY(0deg) skewY(0deg) translateZ(0px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+  30% {
+    /* 종이 끝이 먼저 말려 올라가며 휘어짐 */
+    transform: rotateY(-50deg) skewY(-5deg) translateZ(45px);
+    box-shadow: -15px 15px 35px rgba(0, 0, 0, 0.45);
+  }
+  65% {
+    /* 중앙 책등을 통과할 때 포물선 아치형 굽힘 */
+    transform: rotateY(-125deg) skewY(4deg) translateZ(50px);
+    box-shadow: -20px 20px 45px rgba(0, 0, 0, 0.4);
+  }
+  85% {
+    /* 좌측 페이지에 닿기 직전 펼쳐지기 시작 */
+    transform: rotateY(-172deg) skewY(1deg) translateZ(10px);
+    box-shadow: -5px 5px 15px rgba(0, 0, 0, 0.25);
+  }
+  100% {
+    /* 완전히 펼쳐지며 착지 */
+    transform: rotateY(-180deg) skewY(0deg) translateZ(0px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@keyframes paperCurlPrev {
+  0% {
+    transform: rotateY(0deg) skewY(0deg) translateZ(0px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+  30% {
+    /* 왼쪽 가장자리가 위로 말려 올라가며 오른쪽으로 휨 */
+    transform: rotateY(50deg) skewY(5deg) translateZ(45px);
+    box-shadow: 15px 15px 35px rgba(0, 0, 0, 0.45);
+  }
+  65% {
+    /* 중앙 책등을 통과할 때 포물선 아치형 굽힘 */
+    transform: rotateY(125deg) skewY(-4deg) translateZ(50px);
+    box-shadow: 20px 20px 45px rgba(0, 0, 0, 0.4);
+  }
+  85% {
+    /* 우측 페이지에 닿기 직전 펼쳐지기 시작 */
+    transform: rotateY(172deg) skewY(-1deg) translateZ(10px);
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.25);
+  }
+  100% {
+    /* 우측 페이지 위에 완전히 펼쳐지며 착지 */
+    transform: rotateY(180deg) skewY(0deg) translateZ(0px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* =======================================================
+   수직 플립 (모바일 세로 모드): 상 -> 하 / 하 -> 상 종이 말림 모션
+   ======================================================= */
+@keyframes paperCurlVerticalNext {
+  0% {
+    transform: rotateX(0deg) skewX(0deg) translateZ(0px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  30% {
+    /* 아래쪽 끝이 위로 둥글게 말려 올라감 */
+    transform: rotateX(45deg) skewX(-3deg) translateZ(40px);
+    box-shadow: 0 -15px 35px rgba(0, 0, 0, 0.45);
+  }
+  65% {
+    /* 수첩 상단 힌지 넘어서면서 아치형 만곡 */
+    transform: rotateX(135deg) skewX(2deg) translateZ(45px);
+    box-shadow: 0 -25px 40px rgba(0, 0, 0, 0.4);
+  }
+  85% {
+    transform: rotateX(174deg) skewX(0.5deg) translateZ(8px);
+    box-shadow: 0 -8px 15px rgba(0, 0, 0, 0.25);
+  }
+  100% {
+    transform: rotateX(180deg) skewX(0deg) translateZ(0px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@keyframes paperCurlVerticalPrev {
+  0% {
+    transform: rotateX(180deg) skewX(0deg) translateZ(0px);
+  }
+  30% {
+    transform: rotateX(135deg) skewX(3deg) translateZ(40px);
+  }
+  65% {
+    transform: rotateX(45deg) skewX(-2deg) translateZ(45px);
+  }
+  85% {
+    transform: rotateX(6deg) skewX(-0.5deg) translateZ(8px);
+  }
+  100% {
+    transform: rotateX(0deg) skewX(0deg) translateZ(0px);
+  }
+}
+
+.anim-curl-next {
+  animation: paperCurlNext 0.72s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+.anim-curl-prev {
+  animation: paperCurlPrev 0.72s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+  transform-origin: right center;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+.anim-curl-vertical-next {
+  animation: paperCurlVerticalNext 0.72s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+.anim-curl-vertical-prev {
+  animation: paperCurlVerticalPrev 0.72s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+/* 양장본 책 표지 질감 & 가죽/패브릭 음영 */
+.hardcover-texture {
+  background: linear-gradient(135deg, #18120e 0%, #261b14 50%, #110d0a 100%);
+  box-shadow: 
+    inset 0 0 35px rgba(0, 0, 0, 0.85),
+    0 35px 70px -15px rgba(0, 0, 0, 0.95),
+    0 12px 25px -5px rgba(0, 0, 0, 0.75);
+}
+
+/* 고급 내지 종이 질감 */
+.paper-texture-left {
+  background: linear-gradient(to right, #e7ddcd 0%, #f4ede0 85%, #fbf8f0 100%);
+  box-shadow: inset -10px 0 25px rgba(0, 0, 0, 0.06);
+}
+
+.paper-texture-right {
+  background: linear-gradient(to left, #e7ddcd 0%, #f4ede0 85%, #fbf8f0 100%);
+  box-shadow: inset 10px 0 25px rgba(0, 0, 0, 0.06);
+}
+
+.paper-texture-single {
+  background: radial-gradient(circle at 50% 40%, #fffdf8 0%, #f4eee2 100%);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.04);
+}
+
+/* 책 중앙 척추(Spine)의 입체적 그림자 */
+.book-spine-crease {
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.16) 20%,
+    rgba(0, 0, 0, 0.03) 50%,
+    rgba(0, 0, 0, 0.16) 80%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+}
+
+/* 수직 플립용 상단 바인더 척추 그림자 */
+.book-spine-crease-vertical {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.15) 25%,
+    rgba(0, 0, 0, 0.02) 60%,
+    transparent 100%
+  );
+}
+
+/* 커스텀 스크롤바 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}

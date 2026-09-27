@@ -1,0 +1,6 @@
+{
+  "name": "Pentalyze : 다섯결 (5-Step Sentence Insights)",
+  "description": "한 줄 문장 분석 및 교정을 위한 5단계 다각도 인사이트 플랫폼. 3D 책장 넘김 인터랙션과 하이브리드 TTS, 로컬 서재를 제공합니다.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
