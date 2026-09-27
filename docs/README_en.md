@@ -132,6 +132,57 @@ npm run build
 
 ---
 
+## 📲 App Installation (PWA) & Uninstallation Guide
+
+> 💡 **Service Deployment & User App Installation Notice**:  
+> Whether you deploy this project as-is or open a modified/enhanced version of the service, all necessary components (PWA Manifest, Service Worker, and interactive install prompt modal) are fully integrated so that visiting end users can install and run it as an independent native app (PWA) across PC, tablet, and smartphone via the header's **[Install App]** button or native browser install options.
+
+Pentalyze fully adheres to **Progressive Web App (PWA)** web standards. Without requiring third-party app stores, you can install Pentalyze directly on PC desktop, macOS, Linux, and mobile devices as a native standalone application free of browser URL bars, and remove it at any time with zero leftover artifacts.
+
+### 1. 🖥️ PC Desktop (Windows / macOS / Linux)
+
+#### 📥 How to Install
+1. **Browser Address Bar**: When visiting Pentalyze in Chrome, Edge, Brave, or Whale, click the **[Install (⊕ / 💻)]** icon at the right end of the address bar.
+2. **In-App Header Button**: Click the **[Install App]** button in the top navigation bar, then click **[Install]** on the prompt modal.
+3. A desktop shortcut and Start Menu/Dock icon will be created, launching Pentalyze as a dedicated window.
+
+#### 🗑️ How to Uninstall / Remove
+* **Method 1 (Directly from App Window - Recommended)**:  
+  In the open Pentalyze app window, click the three-dots menu (**⋮** or **···**) in the upper-right title bar ➔ Select **[Uninstall Pentalyze...]** ➔ (Optional) Check "Also clear data from Chrome" ➔ Click **[Remove]**.
+* **Method 2 (Browser App Manager)**:  
+  - In Chrome: Navigate to `chrome://apps` ➔ Right-click **Pentalyze** ➔ Click **[Remove from Chrome...]**.
+  - In Edge: Navigate to `edge://apps` ➔ Click **[···]** next to Pentalyze ➔ Click **[Uninstall]**.
+* **Method 3 (Windows System Settings)**:  
+  Windows [Start] ➔ [Settings] ➔ [Apps] ➔ [Installed Apps] ➔ Search for 'Pentalyze' ➔ Click the menu ➔ Select **[Uninstall]**.
+* **Method 4 (macOS Finder)**:  
+  Finder ➔ [Applications] (or `~/Applications/Chrome Apps`) ➔ Drag 'Pentalyze' to the Trash.
+
+---
+
+### 2. 📱 Mobile & Tablet (iOS Safari / Android Chrome)
+
+#### 🍎 iPhone / iPad (iOS Safari)
+* **Install**: Open Safari ➔ Tap the **Share icon (⎋ / ↑)** on the toolbar ➔ Select **[Add to Home Screen]** ➔ Tap **[Add]** in the top right.
+* **Uninstall**: Long-press the Pentalyze icon on your Home Screen ➔ Tap **[Delete App]** (or **[Remove App]** ➔ **[Delete App]**).
+
+#### 🤖 Android (Chrome)
+* **Install**: Open Chrome ➔ Tap **Menu (⋮)** in the top right ➔ Tap **[Install app]** or **[Add to Home screen]** ➔ Tap **[Install]**.
+* **Uninstall**: Long-press the Pentalyze icon on your Home Screen ➔ Drag to **[Uninstall]** at the top or tap **[Uninstall]** in the popup menu.
+
+---
+
+### 3. 💻 Local Git Clone / ZIP Run & Deletion
+
+* **Running**:
+  - Windows: Double-click `start.bat`
+  - macOS / Linux: Run `bash start.sh`
+* **Complete Removal**:
+  - Pentalyze is completely self-contained and portable; it makes no registry or system modifications.
+  - Simply delete the extracted project folder into your Trash/Recycle Bin to remove it 100% cleanly.
+  - To erase browser-saved API keys and saved bookshelf records, click **[Clear All]** in the in-app Bookshelf modal (📚) or clear your browser's site cookies/cache.
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](../LICENSE). Feel free to fork and build upon it!

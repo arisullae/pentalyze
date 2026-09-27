@@ -147,11 +147,94 @@ npm run build
 
 ---
 
+## 📲 앱 설치(PWA) 및 삭제/제거 가이드 (Installation & Uninstallation)
+
+> 💡 **서비스 배포 및 사용자 앱 설치 지원 안내**:  
+> 향후 본 프로젝트를 그대로 배포하거나 독자적으로 수정·개선하여 서비스를 오픈할 경우, 이를 방문한 일반 사용자가 PC·태블릿·스마트폰 어디서든 헤더의 **[앱 설치]** 버튼이나 브라우저 자체 설치 기능을 통해 독립된 네이티브 앱(PWA) 형태로 설치하여 사용할 수 있도록 모든 구성(PWA 매니페스트, 서비스 워커, 인스톨 프롬프트 모달)이 완벽하게 포함되어 있습니다.
+
+Pentalyze는 웹 표준 기술인 **PWA(Progressive Web App)**를 완벽 지원합니다. 별도의 앱스토어를 거치지 않고 PC 데스크톱 및 모바일 기기에 네이티브 독립형 앱으로 간편하게 설치하여 브라우저 주소창 없이 실제 책처럼 이용할 수 있으며, 언제든 손쉽게 삭제(제거)할 수 있습니다.
+
+### 1. 🖥️ PC 데스크톱 (Windows / macOS / Linux)
+
+#### 📥 앱 설치 방법
+1. **브라우저 주소창 아이콘**: Chrome, Edge, Whale 등 브라우저로 Pentalyze 접속 시 주소창 우측 끝에 나타나는 **[설치 (⊕ / 💻)]** 아이콘을 클릭합니다.
+2. **앱 내부 버튼**: 앱 상단 헤더의 **[앱 설치]** 버튼을 클릭한 후 팝업 창에서 **[설치]**를 클릭합니다.
+3. 설치 완료 시 바탕화면과 시작 메뉴(작업표시줄)에 Pentalyze 바로가기 아이콘이 생성되며, 브라우저 메뉴 없는 독립 앱 창으로 즉시 실행됩니다.
+
+#### 🗑️ 앱 삭제 (제거) 방법
+* **방법 1 (앱 창 내부에서 직접 삭제 - 가장 간편)**:  
+  실행 중인 Pentalyze 독립 창 우측 상단의 **메뉴(⋮ 또는 ···)** 클릭 ➔ **[Pentalyze 제거...]** 또는 **[앱 제거]** 클릭 ➔ (선택) '관련 데이터도 삭제' 체크 후 **[제거]**를 클릭합니다.
+* **방법 2 (브라우저 앱 관리자)**:  
+  - Chrome 브라우저 주소창에 `chrome://apps` 입력 후 Enter ➔ `Pentalyze` 아이콘 우클릭 ➔ **[Chrome에서 삭제...]** 선택.
+  - Edge 브라우저 주소창에 `edge://apps` 입력 후 Enter ➔ `Pentalyze` 항목 우측의 **[···]** 클릭 ➔ **[제거]** 선택.
+* **방법 3 (Windows 운영체제 설정)**:  
+  Windows [시작] ➔ [설정] ➔ [앱] ➔ [설치된 앱] (또는 프로그램 추가/제거) ➔ 'Pentalyze' 검색 후 **[제거]** 선택.
+* **방법 4 (macOS Finder)**:  
+  Finder ➔ [응용 프로그램 (Applications)] 또는 사용자 홈 폴더 내 [Chrome Apps] ➔ 'Pentalyze' 아이콘을 휴지통으로 이동.
+
+---
+
+### 2. 📱 모바일 및 태블릿 (iOS Safari / Android Chrome)
+
+#### 🍎 iPhone / iPad (iOS Safari)
+* **설치**: Safari 브라우저로 접속 ➔ 하단 중앙 툴바의 **공유(Share, ⎋ / ↑) 아이콘** 탭 ➔ 메뉴 목록에서 **[홈 화면에 추가 (Add to Home Screen)]** 선택 ➔ 우측 상단 **[추가]** 탭 ➔ 홈 화면에 정식 앱 아이콘 생성.
+* **삭제**: 홈 화면의 Pentalyze 아이콘을 길게 누름(Long-press) ➔ **[앱 삭제]** ➔ **[홈 화면에서 제거]** 또는 **[삭제]** 선택.
+
+#### 🤖 Android 스마트폰 / 태블릿 (Chrome)
+* **설치**: Chrome 브라우저로 접속 ➔ 우측 상단 **메뉴(⋮)** 탭 ➔ **[앱 설치]** 또는 **[홈 화면에 추가]** 탭 ➔ 확인 팝업에서 **[설치]** 선택.
+* **삭제**: 홈 화면의 Pentalyze 아이콘을 길게 누름 ➔ 상단 **[설치 삭제]** 아이콘으로 드래그하거나 팝업 메뉴의 **[설치 삭제]** 선택 (또는 기기 [설정] ➔ [애플리케이션] ➔ 'Pentalyze' ➔ [삭제]).
+
+---
+
+### 3. 💻 로컬 다운로드(Git Clone / ZIP 압축 해제) 프로젝트 실행 및 삭제
+
+* **설치 및 실행**:
+  - Windows: 폴더 안의 `start.bat` 더블 클릭 (Node.js 감지 및 자동 패키지 설치 후 브라우저 자동 오픈)
+  - Mac / Linux: 터미널에서 `bash start.sh` 실행
+* **완전 삭제(제거)**:
+  - 본 프로그램은 레지스트리나 시스템 파일을 수정하지 않는 100% 독립 포터블 구조입니다.
+  - 다운로드한 프로젝트 폴더 전체를 휴지통으로 이동(삭제)하시면 시스템에 아무런 잔여물 없이 완전히 제거됩니다.
+  - 브라우저에 저장된 API 키와 서재 기록을 초기화하시려면, 앱 내 서재(📚)에서 **[전체 삭제]**를 누르시거나 브라우저 인터넷 사용 기록에서 캐시/사이트 데이터를 삭제하시면 됩니다.
+
+---
+
+### 4. ☁️ 구글 코랩(Google Colab) 클라우드 샌드박스 실행 및 삭제 (Zero-Install)
+
+> **상세 원클릭 스크립트 및 운영 가이드**: 📄 [docs/GOOGLE_COLAB_GUIDE.md](./docs/GOOGLE_COLAB_GUIDE.md)
+
+로컬 PC에 Node.js나 개발 환경을 전혀 설치하지 않고, 웹 브라우저만으로 클라우드 가상머신(Ubuntu)에서 안전하게 Pentalyze를 테스트·운영하고 흔적 없이 삭제할 수 있습니다.
+
+* **원클릭 설치 및 실행 (Colab 셀에 붙여넣기)**:
+  ```python
+  # Node.js 20.x 설치 및 저장소 복제
+  !curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
+  !git clone https://github.com/your-username/pentalyze.git && cd pentalyze && npm install
+  
+  # 백그라운드 서버 구동 및 Cloudflare 무료 임시 터널 오픈
+  import subprocess, time
+  subprocess.Popen(["npm", "run", "dev"], cwd="/content/pentalyze")
+  time.sleep(4)
+  !wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && dpkg -i cloudflared-linux-amd64.deb > /dev/null 2>&1
+  !cloudflared tunnel --url http://localhost:3000
+  ```
+  *(출력창에 생성되는 `https://*.trycloudflare.com` URL로 전 세계 어디서든 즉시 접속 가능)*
+* **완전 삭제 (Teardown & Purge)**:
+  ```bash
+  # 1. 프로세스 중단: !pkill -f node && !pkill -f cloudflared
+  # 2. 파일 영구 삭제: !rm -rf /content/pentalyze
+  # 3. 런타임 초기화: 코랩 메뉴 [런타임] ➔ [런타임 연결 해제 및 삭제] 클릭 시 100% 초기화
+  ```
+
+---
+
 ## 📂 프로젝트 구조 (Project Directory)
 
 ```
 pentalyze/
-├── docs/                         # 다국어 사용자 및 개발자 가이드 (9개 언어 문서)
+├── docs/                         # 다국어 가이드 및 개발·운영자 기술 핸드오버 문서
+│   ├── DEVELOPER_HANDOVER_3D_XR_DRAG.md # [필독] 3D/XR 드래그 인터랙션 분석 및 추가 조치 로드맵
+│   ├── GOOGLE_COLAB_GUIDE.md     # [신규] 구글 코랩 클라우드 무설치 테스트·운영·삭제 가이드
+│   └── README_*.md               # 9개 언어별 글로벌 사용자 가이드
 ├── public/                       # PWA 매니페스트 및 정적 에셋
 ├── src/
 │   ├── components/
@@ -177,6 +260,28 @@ pentalyze/
 ├── start.sh                      # Mac/Linux 원클릭 자동 실행 스크립트
 └── README.md
 ```
+
+---
+
+## 🛠️ 개발·개선·배포·운영자를 위한 기술 핸드오버 (Developer & Maintainer Handover)
+
+> **상세 기술 분석 및 조치 가이드**: 📄 [docs/DEVELOPER_HANDOVER_3D_XR_DRAG.md](./docs/DEVELOPER_HANDOVER_3D_XR_DRAG.md)  
+> **클라우드 테스트베드 실행 가이드**: 📄 [docs/GOOGLE_COLAB_GUIDE.md](./docs/GOOGLE_COLAB_GUIDE.md)
+
+본 프로젝트를 포크(Fork)하여 **향후 개발, 인터랙션 개선, 프로덕션 배포 및 운영**을 담당할 엔지니어를 위해, **'3D 입체' 및 'XR 공간' 모드에서 틸트(자이로/패럴랙스) 비활성화 시 상·하단 '잡고 넘기기' 버튼의 미세한 동작 특성과 추가 조치 항목**, 그리고 **구글 코랩 기반의 클라우드 샌드박스 테스트베드 구축 방법**이 문서화되어 있습니다.
+
+### 📌 주요 이슈 요약 및 추가 조치 로드맵
+1. **현상 및 원인 분석**:
+   * **틸트 ON 상태**: 마우스 이동/자이로 센서 입력으로 인해 브라우저의 합성 스레드(Compositor Thread)가 매 프레임 레이어 기하 구조를 재평가(Continuous Hit-Testing)하여 드래그 반응이 즉각적임.
+   * **틸트 OFF 상태**: 3D 공간 상에서 정적 각도(`rotateX: 14~18deg`)로 레이어가 고정되면서, 브라우저의 정적 서브픽셀 텍스처 캐싱 및 2D 스크린 벡터와 3D 투영 평면 간의 비선형 각도 차이로 인해 극미세한 조작감의 이질감이 잔존할 수 있음.
+2. **개발·운영자를 위한 단계별 권장 조치 항목**:
+   * **단기**: 고해상도(Retina/Mobile) DPI 기반 반응형 드래그 임계값(Threshold) 가변화 및 `onLostPointerCapture` 안전 타이머 가드 추가
+   * **중기**: `DOMMatrix.inverse()` 기반 3D 역투영(Screen-to-Local-Space) 좌표 보정 연산 적용
+   * **장기 (차세대)**: Three.js / WebGL / WebXR 네이티브 Raycaster 기반 완전한 3D 가상 캔버스 엔진으로의 마이그레이션
+3. **클라우드 샌드박스 테스트베드(Cloud Sandbox Testbed)**:
+   * 로컬 개발 머신 세팅 없이 구글 코랩 환경에서 터널링을 통해 모바일/태블릿 등 다양한 실제 단말기에서 3D/XR 드래그 제스처를 실시간 원격 디버깅할 수 있습니다. 자세한 방법은 [구글 코랩 가이드](./docs/GOOGLE_COLAB_GUIDE.md)를 참고하십시오.
+
+자세한 아키텍처 다이어그램, 수학적 좌표식, 브라우저 엔진별(Chrome/Safari/Firefox) QA 매트릭스는 **[기술 핸드오버 가이드 문서](./docs/DEVELOPER_HANDOVER_3D_XR_DRAG.md)**를 참조하시기 바랍니다.
 
 ---
 

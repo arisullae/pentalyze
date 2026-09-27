@@ -16,7 +16,9 @@ import {
   ChevronUp,
   Cpu,
   Copy,
-  Globe
+  Globe,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -54,6 +56,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [hasServerKey, setHasServerKey] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isTestingKey, setIsTestingKey] = useState<boolean>(false);
+  const [showGeminiKey, setShowGeminiKey] = useState<boolean>(false);
+  const [showOpenaiKey, setShowOpenaiKey] = useState<boolean>(false);
   const [copiedPromptType, setCopiedPromptType] = useState<'version' | 'i18n' | null>(null);
 
   const handleCopyPrompt = (type: 'version' | 'i18n', text: string) => {
@@ -210,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </p>
         </div>
 
-        <form onSubmit={handleSave} className="mt-5 space-y-6">
+        <form onSubmit={handleSave} autoComplete="off" className="mt-5 space-y-6">
           {/* AI Model Provider */}
           <div className="space-y-3">
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
@@ -273,17 +277,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <input
-                type="password"
-                value={formData.geminiKey}
-                onChange={(e) => setFormData({ ...formData, geminiKey: e.target.value })}
-                placeholder={
-                  hasServerKey
-                    ? "서버 키가 등록되어 있습니다 (개인 키를 입력하면 개인 키가 우선 적용됩니다)"
-                    : "AIzaSy... 본인의 Gemini API 키를 입력하세요"
-                }
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/60"
-              />
+              <div className="relative">
+                <input
+                  type={showGeminiKey ? "text" : "password"}
+                  value={formData.geminiKey}
+                  onChange={(e) => setFormData({ ...formData, geminiKey: e.target.value })}
+                  placeholder={
+                    hasServerKey
+                      ? "서버 키가 등록되어 있습니다 (개인 키를 입력하면 개인 키가 우선 적용됩니다)"
+                      : "AIzaSy... 본인의 Gemini API 키를 입력하세요"
+                  }
+                  autoComplete="new-password"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGeminiKey(!showGeminiKey)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 p-1"
+                  title={showGeminiKey ? "키 숨기기" : "키 표시"}
+                >
+                  {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"
@@ -313,13 +330,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <input
-                type="password"
-                value={formData.openaiKey}
-                onChange={(e) => setFormData({ ...formData, openaiKey: e.target.value })}
-                placeholder="sk-proj-..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500/60"
-              />
+              <div className="relative">
+                <input
+                  type={showOpenaiKey ? "text" : "password"}
+                  value={formData.openaiKey}
+                  onChange={(e) => setFormData({ ...formData, openaiKey: e.target.value })}
+                  placeholder="sk-proj-..."
+                  autoComplete="new-password"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-white/10 bg-black/40 text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500/60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 p-1"
+                  title={showOpenaiKey ? "키 숨기기" : "키 표시"}
+                >
+                  {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"

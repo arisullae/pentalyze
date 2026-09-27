@@ -93,6 +93,9 @@ export const Book3D: React.FC<Book3DProps> = ({
   const [gripHintNotice, setGripHintNotice] = useState<string | null>(null);
   const buttonDragOccurredRef = useRef<boolean>(false);
   const isDraggingFromButtonRef = useRef<boolean>(false);
+  const isHoldingPageRef = useRef<boolean>(false);
+  const dragProgressRef = useRef<number>(0);
+  const dragTargetDirRef = useRef<'next' | 'prev'>('next');
 
   // 다국어 실시간 번역 진행 상태
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
@@ -309,7 +312,7 @@ export const Book3D: React.FC<Book3DProps> = ({
     }
   };
 
-  // 자이로 모션
+  // 자이로 모션 (모바일 자이로 센서 & PC 마우스 패럴랙스 틸트 지원)
   useEffect(() => {
     if (!isMotionTrackingEnabled) {
       setMotionTilt({ x: 0, y: 0 });
@@ -324,8 +327,21 @@ export const Book3D: React.FC<Book3DProps> = ({
       }
     };
 
+    // PC 데스크톱 환경에서도 틸트 효과를 체감할 수 있도록 마우스 위치 기반 미세 틸트 연동
+    const handleMouseMove = (e: MouseEvent) => {
+      if (typeof window === 'undefined') return;
+      const { innerWidth, innerHeight } = window;
+      const offsetX = (e.clientX / innerWidth - 0.5) * 2; // -1 to 1
+      const offsetY = (e.clientY / innerHeight - 0.5) * 2; // -1 to 1
+      setMotionTilt({ x: offsetX * 7, y: offsetY * 7 });
+    };
+
     window.addEventListener('deviceorientation', handleOrientation);
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
   }, [isMotionTrackingEnabled]);
 
   // 키보드 조작
@@ -368,7 +384,62 @@ export const Book3D: React.FC<Book3DProps> = ({
     }, 2400);
   };
 
-  // 넘기기 버튼 전용: 포인터 다운 (Grip Mode 활성화 시 드래그 홀드 개시)
+  // ---------------------------------------------------------------------------
+  // [개발·운영자 핸드오버 노트] 넘기기 버튼 전용: 모던 Pointer Events API & 캡처 제어
+  // 상세 기술 문서: /docs/DEVELOPER_HANDOVER_3D_XR_DRAG.md
+  // 1) 틸트 ON: mousemove/gyro 이벤트로 매 프레임 레이어가 리렌더링되며 Compositor가
+  //    히트테스팅을 연속 재계산하여 드래그 반응이 즉각적임.
+  // 2) 틸트 OFF: 정적 3D 각도(rotateX: 14~18deg)에서 서브픽셀 정적 캐시 및 2D-3D 벡터
+  //    왜곡이 발생할 수 있으므로, setPointerCapture와 touch-none으로 포인터를 완전 캡처함.
+  // 3) 향후 유지보수 시 onLostPointerCapture 및 감도 계수(getDragSensitivity) 가변화 적용 가능.
+  // ---------------------------------------------------------------------------
+  const handleButtonLostPointerCapture = () => {
+    isPointerDownRef.current = false;
+    isHoldingPageRef.current = false;
+    setIsHoldingPage(false);
+    setDragProgress(0);
+  };
+
+  const handleButtonPointerDown = (
+    dir: 'next' | 'prev',
+    e: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    if (isFlipping) return;
+    if (isGripModeActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      isPointerDownRef.current = true;
+      isDraggingFromButtonRef.current = true;
+      buttonDragOccurredRef.current = false;
+      isHoldingPageRef.current = true;
+      dragProgressRef.current = 0;
+      dragTargetDirRef.current = dir;
+      touchStartCoord.current = { x: e.clientX, y: e.clientY };
+      setIsHoldingPage(true);
+      setDragTargetDir(dir);
+      setDragProgress(0);
+    }
+  };
+
+  const handleButtonPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (isPointerDownRef.current || isHoldingPageRef.current) {
+      handlePointerMove(e.clientX, e.clientY);
+    }
+  };
+
+  const handleButtonPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch (_) {}
+    handlePointerUp(e.clientX, e.clientY);
+  };
+
+  // 넘기기 버튼 전용: 포인터 다운 (Grip Mode 활성화 시 드래그 홀드 개시 - 하위 호환)
   const handleButtonGripStart = (
     dir: 'next' | 'prev',
     clientX: number,
@@ -377,10 +448,16 @@ export const Book3D: React.FC<Book3DProps> = ({
   ) => {
     if (isFlipping) return;
     if (isGripModeActive) {
+      if ('preventDefault' in e) {
+        e.preventDefault();
+      }
       e.stopPropagation();
       isPointerDownRef.current = true;
       isDraggingFromButtonRef.current = true;
       buttonDragOccurredRef.current = false;
+      isHoldingPageRef.current = true;
+      dragProgressRef.current = 0;
+      dragTargetDirRef.current = dir;
       touchStartCoord.current = { x: clientX, y: clientY };
       setIsHoldingPage(true);
       setDragTargetDir(dir);
@@ -426,6 +503,9 @@ export const Book3D: React.FC<Book3DProps> = ({
     touchStartCoord.current = { x: clientX, y: clientY };
 
     if (targetIsCorner) {
+      isHoldingPageRef.current = true;
+      dragProgressRef.current = 0;
+      dragTargetDirRef.current = initialDir;
       setIsHoldingPage(true);
       setDragProgress(0);
       setDragTargetDir(initialDir);
@@ -434,40 +514,52 @@ export const Book3D: React.FC<Book3DProps> = ({
 
   // 포인터 무브
   const handlePointerMove = (clientX: number, clientY: number) => {
-    if (!isPointerDownRef.current) return;
-    if (!isHoldingPage) return; // 드래그 모드가 아니면 일반 터치 스크롤을 절대 방해하지 않음
+    if (!isPointerDownRef.current && !isHoldingPageRef.current) return;
 
     const deltaX = clientX - touchStartCoord.current.x;
     const deltaY = clientY - touchStartCoord.current.y;
 
-    if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
       buttonDragOccurredRef.current = true;
     }
 
-    if (isHoldingPage) {
+    if (isHoldingPageRef.current || isHoldingPage) {
+      let progress = 0;
       if (effectiveFlipAxis === 'vertical') {
         const distance = Math.abs(deltaY);
-        const progress = Math.min(1, Math.max(0, distance / 80));
-        setDragProgress(progress);
+        progress = Math.min(1, Math.max(0, distance / 50));
       } else {
         const distance = Math.abs(deltaX);
-        const progress = Math.min(1, Math.max(0, distance / 90));
-        setDragProgress(progress);
+        progress = Math.min(1, Math.max(0, distance / 60));
       }
+      dragProgressRef.current = progress;
+      setDragProgress(progress);
     }
   };
 
   // 포인터 업
   const handlePointerUp = (clientX: number, clientY: number) => {
-    if (!isPointerDownRef.current) return;
+    if (!isPointerDownRef.current && !isHoldingPageRef.current) return;
     isPointerDownRef.current = false;
 
     const deltaX = clientX - touchStartCoord.current.x;
+    const deltaY = clientY - touchStartCoord.current.y;
+    const hadHoldingPage = isHoldingPageRef.current || isHoldingPage;
+    const currentProgress = dragProgressRef.current;
+    const currentTargetDir = dragTargetDirRef.current;
 
-    if (isHoldingPage) {
-      // 드래그 진행률 25% 이상 또는 버튼 드래그 시 임계치 충족 시 페이지 전환 실행
-      if (dragProgress >= 0.28 || (buttonDragOccurredRef.current && dragProgress >= 0.2)) {
-        if (dragTargetDir === 'next') {
+    isHoldingPageRef.current = false;
+    dragProgressRef.current = 0;
+
+    if (hadHoldingPage) {
+      // 드래그 진행률 12% 이상이거나 버튼 드래그 제스처 발생 시 즉각 페이지 전환 실행
+      if (
+        currentProgress >= 0.12 ||
+        buttonDragOccurredRef.current ||
+        Math.abs(deltaY) > 8 ||
+        Math.abs(deltaX) > 8
+      ) {
+        if (currentTargetDir === 'next') {
           nextPage();
         } else {
           prevPage();
@@ -484,21 +576,26 @@ export const Book3D: React.FC<Book3DProps> = ({
       return;
     }
 
-    // 짧은 거리의 터치(Flick): 수평 모드에서만 지원
-    if (effectiveFlipAxis === 'horizontal' && !isGripModeActive) {
-      const deltaY = clientY - touchStartCoord.current.y;
-      if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.6) {
-        if (deltaX < 0) nextPage();
-        else prevPage();
+    // 짧은 거리의 플릭 제스처 (Flick): 수평 및 수직 모드 지원
+    if (!isGripModeActive) {
+      if (effectiveFlipAxis === 'horizontal') {
+        if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+          if (deltaX < 0) nextPage();
+          else prevPage();
+        }
+      } else {
+        if (Math.abs(deltaY) > 45 && Math.abs(deltaY) > Math.abs(deltaX) * 1.4) {
+          if (deltaY < 0) nextPage();
+          else prevPage();
+        }
       }
     }
   };
 
-  // 버튼 드래그 중 화면 밖으로 벗어나도 안전하게 포인터를 추적하여 릴리즈하는 글로벌 리스너
+  // 글로벌 마우스/터치 리스너: 틸트 활성 여부와 무관하게 모든 드래그 제스처를 완벽 추적
   useEffect(() => {
-    if (!isHoldingPage) return;
-
     const handleWindowPointerMove = (e: MouseEvent | TouchEvent) => {
+      if (!isPointerDownRef.current && !isHoldingPageRef.current) return;
       let clientX = 0;
       let clientY = 0;
       if ('touches' in e && e.touches.length > 0) {
@@ -512,6 +609,7 @@ export const Book3D: React.FC<Book3DProps> = ({
     };
 
     const handleWindowPointerUp = (e: MouseEvent | TouchEvent) => {
+      if (!isPointerDownRef.current && !isHoldingPageRef.current) return;
       let clientX = 0;
       let clientY = 0;
       if ('changedTouches' in e && e.changedTouches.length > 0) {
@@ -535,7 +633,7 @@ export const Book3D: React.FC<Book3DProps> = ({
       window.removeEventListener('touchmove', handleWindowPointerMove);
       window.removeEventListener('touchend', handleWindowPointerUp);
     };
-  }, [isHoldingPage, dragProgress, dragTargetDir]);
+  }, [currentPage, effectiveFlipAxis, isGripModeActive]);
 
   // 책장 넘김 소프트 페이퍼 사운드 (Web Audio API 실시간 합성 사운드)
   const [isPaperSoundEnabled, setIsPaperSoundEnabled] = useState<boolean>(false);
@@ -969,28 +1067,28 @@ export const Book3D: React.FC<Book3DProps> = ({
 
     if (viewMode === 'flat') {
       return {
-        transform: `perspective(2600px) rotateX(${tiltRotateX}deg) rotateY(${tiltRotateY}deg)`
+        transform: `rotateX(${tiltRotateX}deg) rotateY(${tiltRotateY}deg)`
       };
     }
     if (viewMode === 'spatial') {
       // 모바일 세로 또는 단일 페이지 뷰에서는 과도한 3D 회전으로 인한 글자 왜곡 및 잘림 방지
       if (isMobilePortrait || isPortraitMode || effectiveLayoutMode === 'single') {
         return {
-          transform: `perspective(2200px) rotateX(${3 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) scale(0.99)`
+          transform: `rotateX(${3 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) scale(0.99)`
         };
       }
       return {
-        transform: `perspective(2300px) rotateX(${18 + tiltRotateX}deg) rotateY(${-5 + tiltRotateY}deg) scale(0.97)`
+        transform: `rotateX(${18 + tiltRotateX}deg) rotateY(${-5 + tiltRotateY}deg) scale(0.97)`
       };
     }
     if (viewMode === 'xr') {
       if (isMobilePortrait || isPortraitMode || effectiveLayoutMode === 'single') {
         return {
-          transform: `perspective(1900px) rotateX(${2 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) translateY(-4px) scale(0.99)`
+          transform: `rotateX(${2 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) translateY(-4px) scale(0.99)`
         };
       }
       return {
-        transform: `perspective(1900px) rotateX(${10 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) translateY(-14px) scale(0.99)`
+        transform: `rotateX(${10 + tiltRotateX}deg) rotateY(${tiltRotateY}deg) translateY(-14px) scale(0.99)`
       };
     }
     return {};
@@ -1008,7 +1106,9 @@ export const Book3D: React.FC<Book3DProps> = ({
             <span className="text-[11px] font-mono text-stone-500">Page 0</span>
           </div>
           <div 
-            className="flex-1 my-auto text-center space-y-4 py-4 overflow-y-auto max-h-[56vh] sm:max-h-none"
+            className={`flex-1 my-auto text-center space-y-4 py-4 overflow-y-auto min-h-0 ${
+              isSingleView ? 'max-h-[50vh] sm:max-h-[54vh]' : 'max-h-[56vh] sm:max-h-none'
+            }`}
             style={{ touchAction: 'pan-y' }}
           >
             <div className="inline-flex p-3 rounded-full bg-amber-900/10 text-amber-900">
@@ -1031,13 +1131,16 @@ export const Book3D: React.FC<Book3DProps> = ({
                 : '← / → Keyboard or Swipe'}
             </p>
           </div>
-          <div className="border-t border-amber-900/10 pt-3 shrink-0">
+          <div className="border-t border-amber-900/10 pt-3 shrink-0 relative z-20">
             <button
               type="button"
+              onPointerDown={(e) => handleButtonPointerDown('next', e)}
+              onPointerMove={handleButtonPointerMove}
+              onPointerUp={handleButtonPointerUp}
               onMouseDown={(e) => handleButtonGripStart('next', e.clientX, e.clientY, e)}
               onTouchStart={(e) => handleButtonGripStart('next', e.touches[0].clientX, e.touches[0].clientY, e)}
               onClick={(e) => handleButtonGripClick('next', e)}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition-all select-none ${
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition-all select-none touch-none ${
                 isGripModeActive
                   ? 'cursor-grab active:cursor-grabbing bg-gradient-to-r from-amber-800 to-amber-950 text-amber-100 ring-2 ring-amber-400 border border-amber-400/80 shadow-amber-900/40 font-bold'
                   : 'bg-gradient-to-r from-amber-900 to-amber-950 text-amber-50 hover:bg-amber-950 active:scale-[0.99]'
@@ -1069,13 +1172,16 @@ export const Book3D: React.FC<Book3DProps> = ({
         <div className="h-full flex flex-col justify-between p-3.5 sm:p-6 lg:p-8 text-stone-800">
           {/* 모바일/세로 환경 전용: 상단 이전 책장 넘기기 버튼 */}
           {isSingleView && pageNum > 0 && (
-            <div className="mb-2 shrink-0">
+            <div className="mb-2 shrink-0 relative z-20">
               <button
                 type="button"
+                onPointerDown={(e) => handleButtonPointerDown('prev', e)}
+                onPointerMove={handleButtonPointerMove}
+                onPointerUp={handleButtonPointerUp}
                 onMouseDown={(e) => handleButtonGripStart('prev', e.clientX, e.clientY, e)}
                 onTouchStart={(e) => handleButtonGripStart('prev', e.touches[0].clientX, e.touches[0].clientY, e)}
                 onClick={(e) => handleButtonGripClick('prev', e)}
-                className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border transition-all shadow-sm group select-none ${
+                className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border transition-all shadow-sm group select-none touch-none ${
                   isGripModeActive
                     ? 'cursor-grab active:cursor-grabbing bg-amber-500/25 hover:bg-amber-500/35 text-amber-950 border-amber-500/70 ring-2 ring-amber-400 font-bold'
                     : 'bg-amber-950/10 hover:bg-amber-950/20 active:scale-[0.99] border-amber-900/15 text-amber-950 font-semibold'
@@ -1118,7 +1224,9 @@ export const Book3D: React.FC<Book3DProps> = ({
 
           {/* Body: 모바일 세로에서도 부드러운 스크롤 허용 (터치 제스처 충돌 방지) */}
           <div 
-            className="flex-1 overflow-y-auto max-h-[52vh] sm:max-h-[62vh] lg:max-h-none py-2.5 space-y-3.5 pr-1"
+            className={`flex-1 overflow-y-auto py-2.5 space-y-3.5 pr-1 min-h-0 ${
+              isSingleView ? 'max-h-[46vh] sm:max-h-[52vh] lg:max-h-[54vh]' : 'max-h-[52vh] sm:max-h-[62vh] lg:max-h-none'
+            }`}
             style={{ touchAction: 'pan-y' }}
           >
             <div>
@@ -1385,13 +1493,16 @@ export const Book3D: React.FC<Book3DProps> = ({
 
           {/* 모바일/세로 환경 전용: 하단 다음 책장 넘기기 버튼 */}
           {isSingleView && pageNum < totalPages && (
-            <div className="mt-2.5 pt-2 border-t border-amber-900/10 shrink-0">
+            <div className="mt-2.5 pt-2 border-t border-amber-900/10 shrink-0 relative z-20">
               <button
                 type="button"
+                onPointerDown={(e) => handleButtonPointerDown('next', e)}
+                onPointerMove={handleButtonPointerMove}
+                onPointerUp={handleButtonPointerUp}
                 onMouseDown={(e) => handleButtonGripStart('next', e.clientX, e.clientY, e)}
                 onTouchStart={(e) => handleButtonGripStart('next', e.touches[0].clientX, e.touches[0].clientY, e)}
                 onClick={(e) => handleButtonGripClick('next', e)}
-                className={`w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md group select-none ${
+                className={`w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md group select-none touch-none ${
                   isGripModeActive
                     ? 'cursor-grab active:cursor-grabbing bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 text-amber-50 ring-2 ring-amber-400 border border-amber-400/80 shadow-amber-900/30'
                     : 'bg-gradient-to-r from-amber-900 via-amber-950 to-stone-900 hover:from-amber-800 hover:to-amber-900 active:scale-[0.99] text-amber-50'
@@ -1426,13 +1537,16 @@ export const Book3D: React.FC<Book3DProps> = ({
         <div className="h-full flex flex-col justify-between p-3.5 sm:p-6 lg:p-8 text-stone-800">
           {/* 모바일/세로 환경 전용: 상단 이전 책장 넘기기 버튼 */}
           {isSingleView && (
-            <div className="mb-2 shrink-0">
+            <div className="mb-2 shrink-0 relative z-20">
               <button
                 type="button"
+                onPointerDown={(e) => handleButtonPointerDown('prev', e)}
+                onPointerMove={handleButtonPointerMove}
+                onPointerUp={handleButtonPointerUp}
                 onMouseDown={(e) => handleButtonGripStart('prev', e.clientX, e.clientY, e)}
                 onTouchStart={(e) => handleButtonGripStart('prev', e.touches[0].clientX, e.touches[0].clientY, e)}
                 onClick={(e) => handleButtonGripClick('prev', e)}
-                className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border transition-all shadow-sm group select-none ${
+                className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border transition-all shadow-sm group select-none touch-none ${
                   isGripModeActive
                     ? 'cursor-grab active:cursor-grabbing bg-amber-500/25 hover:bg-amber-500/35 text-amber-950 border-amber-500/70 ring-2 ring-amber-400 font-bold'
                     : 'bg-amber-950/10 hover:bg-amber-950/20 active:scale-[0.99] border-amber-900/15 text-amber-950 font-semibold'
@@ -1459,7 +1573,9 @@ export const Book3D: React.FC<Book3DProps> = ({
             <span className="text-[11px] font-mono text-stone-500">Page 6</span>
           </div>
           <div 
-            className="flex-1 my-auto text-center space-y-4 py-3 overflow-y-auto max-h-[52vh] sm:max-h-[62vh] lg:max-h-none"
+            className={`flex-1 my-auto text-center space-y-4 py-3 overflow-y-auto min-h-0 ${
+              isSingleView ? 'max-h-[46vh] sm:max-h-[52vh] lg:max-h-[54vh]' : 'max-h-[52vh] sm:max-h-[62vh] lg:max-h-none'
+            }`}
             style={{ touchAction: 'pan-y' }}
           >
             <div className="inline-flex p-3 rounded-full bg-emerald-900/10 text-emerald-900">
@@ -1831,31 +1947,6 @@ export const Book3D: React.FC<Book3DProps> = ({
             <Columns className="w-3.5 h-3.5" />
             <span className="text-[11px] hidden xl:inline">
               {isSplitView ? t.splitViewOn : t.splitView}
-            </span>
-          </button>
-
-          {/* 플립 축 토글 */}
-          <button
-            type="button"
-            onClick={() => {
-              if (forceFlipAxis === 'auto') {
-                setForceFlipAxis(effectiveFlipAxis === 'vertical' ? 'horizontal' : 'vertical');
-              } else if (forceFlipAxis === 'horizontal') {
-                setForceFlipAxis('vertical');
-              } else {
-                setForceFlipAxis('auto');
-              }
-            }}
-            className={`px-1.5 sm:px-2 py-1 rounded-lg text-xs flex items-center gap-1 transition-all ${
-              effectiveFlipAxis === 'vertical'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-            title={t.flipAxisTooltip}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-mono hidden xl:inline">
-              {effectiveFlipAxis === 'vertical' ? t.flipAxisVertical : t.flipAxisHorizontal}
             </span>
           </button>
 
@@ -2265,7 +2356,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* 실시간 연속 드래그 말림 리프 */}
               {isHoldingPage && dragTargetDir === 'next' && (
                 <div
-                  className="absolute inset-0 z-40"
+                  className="absolute inset-0 z-40 pointer-events-none"
                   style={{
                     transformOrigin: 'top center',
                     transformStyle: 'preserve-3d',
@@ -2280,10 +2371,10 @@ export const Book3D: React.FC<Book3DProps> = ({
                       background: `linear-gradient(to bottom, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.35}) 0%, transparent 40%, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.2}) 100%)`
                     }}
                   />
-                  <div className="page-face absolute inset-0 paper-texture-single">
+                  <div className="page-face absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(currentPage, true)}
                   </div>
-                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single">
+                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(currentPage + 1, true)}
                   </div>
                 </div>
@@ -2292,7 +2383,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* 실시간 연속 드래그 말림 리프 (이전 페이지: 위로 당김) */}
               {isHoldingPage && dragTargetDir === 'prev' && (
                 <div
-                  className="absolute inset-0 z-40"
+                  className="absolute inset-0 z-40 pointer-events-none"
                   style={{
                     transformOrigin: 'bottom center',
                     transformStyle: 'preserve-3d',
@@ -2306,10 +2397,10 @@ export const Book3D: React.FC<Book3DProps> = ({
                       background: `linear-gradient(to top, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.35}) 0%, transparent 40%, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.2}) 100%)`
                     }}
                   />
-                  <div className="page-face absolute inset-0 paper-texture-single">
+                  <div className="page-face absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(currentPage - 1, true)}
                   </div>
-                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single">
+                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(currentPage, true)}
                   </div>
                 </div>
@@ -2318,7 +2409,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* 자동 플립 애니메이션 */}
               {isFlipping && !isHoldingPage && (
                 <div
-                  className={`absolute inset-0 z-40 ${
+                  className={`absolute inset-0 z-40 pointer-events-none ${
                     flipDirection === 'next'
                       ? 'anim-curl-vertical-next'
                       : 'anim-curl-vertical-prev'
@@ -2327,10 +2418,10 @@ export const Book3D: React.FC<Book3DProps> = ({
                     transformOrigin: 'top center'
                   }}
                 >
-                  <div className="page-face absolute inset-0 paper-texture-single">
+                  <div className="page-face absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(flipDirection === 'next' ? currentPage : currentPage - 1, true)}
                   </div>
-                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single">
+                  <div className="page-face page-back-vertical absolute inset-0 paper-texture-single pointer-events-none">
                     {renderPageCard(flipDirection === 'next' ? currentPage + 1 : currentPage, true)}
                   </div>
                 </div>
@@ -2353,10 +2444,13 @@ export const Book3D: React.FC<Book3DProps> = ({
                 {currentPage > 0 && (
                   <button
                     type="button"
+                    onPointerDown={(e) => handleButtonPointerDown('prev', e)}
+                    onPointerMove={handleButtonPointerMove}
+                    onPointerUp={handleButtonPointerUp}
                     onMouseDown={(e) => handleButtonGripStart('prev', e.clientX, e.clientY, e)}
                     onTouchStart={(e) => handleButtonGripStart('prev', e.touches[0].clientX, e.touches[0].clientY, e)}
                     onClick={(e) => handleButtonGripClick('prev', e)}
-                    className={`group absolute top-3 left-4 flex items-center gap-1.5 p-1 px-2.5 rounded-lg border transition-all z-20 select-none ${
+                    className={`group absolute top-3 left-4 flex items-center gap-1.5 p-1 px-2.5 rounded-lg border transition-all z-20 select-none touch-none ${
                       isGripModeActive
                         ? 'cursor-grab active:cursor-grabbing bg-amber-500 text-amber-950 border-amber-400 shadow-md ring-2 ring-amber-300 font-bold'
                         : 'bg-amber-900/10 hover:bg-amber-900/15 text-amber-900 border-amber-900/15 cursor-pointer'
@@ -2449,10 +2543,13 @@ export const Book3D: React.FC<Book3DProps> = ({
                 {currentPage < totalPages && (
                   <button
                     type="button"
+                    onPointerDown={(e) => handleButtonPointerDown('next', e)}
+                    onPointerMove={handleButtonPointerMove}
+                    onPointerUp={handleButtonPointerUp}
                     onMouseDown={(e) => handleButtonGripStart('next', e.clientX, e.clientY, e)}
                     onTouchStart={(e) => handleButtonGripStart('next', e.touches[0].clientX, e.touches[0].clientY, e)}
                     onClick={(e) => handleButtonGripClick('next', e)}
-                    className={`group absolute top-3 right-4 flex items-center gap-1.5 p-1 px-2.5 rounded-lg border transition-all z-20 select-none ${
+                    className={`group absolute top-3 right-4 flex items-center gap-1.5 p-1 px-2.5 rounded-lg border transition-all z-20 select-none touch-none ${
                       isGripModeActive
                         ? 'cursor-grab active:cursor-grabbing bg-amber-500 text-amber-950 border-amber-400 shadow-md ring-2 ring-amber-300 font-bold'
                         : 'bg-amber-900/10 hover:bg-amber-900/15 text-amber-900 border-amber-900/15 cursor-pointer'
@@ -2479,7 +2576,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* [실시간 연속 드래그 말림 리프 - 다음 페이지 (우측 ➔ 좌측)] */}
               {isHoldingPage && dragTargetDir === 'next' && (
                 <div
-                  className="absolute inset-y-0 right-0 w-1/2 z-40"
+                  className="absolute inset-y-0 right-0 w-1/2 z-40 pointer-events-none"
                   style={{
                     transformOrigin: 'left center',
                     transformStyle: 'preserve-3d',
@@ -2494,10 +2591,10 @@ export const Book3D: React.FC<Book3DProps> = ({
                       background: `linear-gradient(to right, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.4}) 0%, transparent 40%, rgba(255,255,255,${Math.sin(dragProgress * Math.PI) * 0.2}) 60%, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.25}) 100%)`
                     }}
                   />
-                  <div className="page-face absolute inset-0 paper-texture-right">
+                  <div className="page-face absolute inset-0 paper-texture-right pointer-events-none">
                     {renderPageCard(currentPage)}
                   </div>
-                  <div className="page-face page-back absolute inset-0 paper-texture-left">
+                  <div className="page-face page-back absolute inset-0 paper-texture-left pointer-events-none">
                     {renderPageCard(currentPage + 1)}
                   </div>
                 </div>
@@ -2506,7 +2603,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* [실시간 연속 드래그 말림 리프 - 이전 페이지 (좌측 ➔ 우측)] */}
               {isHoldingPage && dragTargetDir === 'prev' && (
                 <div
-                  className="absolute inset-y-0 left-0 w-1/2 z-40"
+                  className="absolute inset-y-0 left-0 w-1/2 z-40 pointer-events-none"
                   style={{
                     transformOrigin: 'right center',
                     transformStyle: 'preserve-3d',
@@ -2521,10 +2618,10 @@ export const Book3D: React.FC<Book3DProps> = ({
                       background: `linear-gradient(to left, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.4}) 0%, transparent 40%, rgba(255,255,255,${Math.sin(dragProgress * Math.PI) * 0.2}) 60%, rgba(0,0,0,${Math.sin(dragProgress * Math.PI) * 0.25}) 100%)`
                     }}
                   />
-                  <div className="page-face absolute inset-0 paper-texture-left">
+                  <div className="page-face absolute inset-0 paper-texture-left pointer-events-none">
                     {renderPageCard(currentPage - 1)}
                   </div>
-                  <div className="page-face page-back absolute inset-0 paper-texture-right">
+                  <div className="page-face page-back absolute inset-0 paper-texture-right pointer-events-none">
                     {renderPageCard(currentPage)}
                   </div>
                 </div>
@@ -2533,7 +2630,7 @@ export const Book3D: React.FC<Book3DProps> = ({
               {/* [실물 종이 말림 자동 플립 리프] */}
               {isFlipping && !isHoldingPage && (
                 <div
-                  className={`absolute inset-y-0 ${
+                  className={`absolute inset-y-0 pointer-events-none ${
                     flipDirection === 'next'
                       ? 'right-0 w-1/2 anim-curl-next'
                       : 'left-0 w-1/2 anim-curl-prev'
@@ -2546,7 +2643,7 @@ export const Book3D: React.FC<Book3DProps> = ({
                   <div className="absolute inset-0 pointer-events-none z-50 bg-gradient-to-r from-black/20 via-transparent to-black/20 mix-blend-multiply opacity-60" />
                   
                   <div
-                    className={`page-face absolute inset-0 ${
+                    className={`page-face absolute inset-0 pointer-events-none ${
                       flipDirection === 'next' ? 'paper-texture-right' : 'paper-texture-left'
                     }`}
                   >
@@ -2554,7 +2651,7 @@ export const Book3D: React.FC<Book3DProps> = ({
                   </div>
 
                   <div
-                    className={`page-face page-back absolute inset-0 ${
+                    className={`page-face page-back absolute inset-0 pointer-events-none ${
                       flipDirection === 'next' ? 'paper-texture-left' : 'paper-texture-right'
                     }`}
                   >
